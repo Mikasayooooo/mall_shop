@@ -191,3 +191,8 @@ LOGGING = {
         },
     }
 }
+
+REST_FRAMEWORK = {
+    # 异常处理
+    'EXCEPTION_HANDLER': 'mall.utils.exceptions.exception_handler',
+}
