@@ -37,11 +37,19 @@ class SMSCodeView(APIView):
         sms_code = '%06d' % random.randint(0, 999999)
         logger.info(sms_code)
 
+        # 创建redis管道：（把多次redis操作装入管道中，将来一次性取执行，减少redis的连接操作）
+        pl = redis_conn.pipeline()
+
         # 5.把验证码存储到redis数据库
-        redis_conn.setex('sms_%s' % mobile, constants.SMS_CODE_REDIS_EXPIRES, sms_code)
+        # redis_conn.setex('sms_%s' % mobile, constants.SMS_CODE_REDIS_EXPIRES, sms_code)
+        pl.setex('sms_%s' % mobile, constants.SMS_CODE_REDIS_EXPIRES, sms_code)
 
         # 6.存储一个标记，表示此手机号已经发送过短信,标记有效期60s
-        redis_conn.setex('send_flag_%s' %mobile,constants.SEND_SMS_CODE_INTERVAL,1)
+        # redis_conn.setex('send_flag_%s' %mobile,constants.SEND_SMS_CODE_INTERVAL,1)
+        pl.setex('send_flag_%s' %mobile,constants.SEND_SMS_CODE_INTERVAL,1)
+
+        # 执行管道
+        pl.execute()  # 最后一定要执行，上面代码只是将指令放入到管道中
 
         # 7.利用荣联云通讯发送短信验证码
         # 注意： 测试的短信模板编号为1
