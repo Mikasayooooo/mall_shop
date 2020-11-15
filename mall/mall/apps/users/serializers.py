@@ -13,6 +13,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(label='确认密码',write_only=True)
     sms_code = serializers.CharField(label='验证码',write_only=True)
     allow = serializers.CharField(label='同意协议',write_only=True)
+    token = serializers.CharField(label='token',read_only=True)  # 临时定义一个字段
 
     class Meta:
         model = User  # 从User模型中映射序列化器字段
@@ -101,5 +102,15 @@ class CreateUserSerializer(serializers.ModelSerializer):
         # 保存到数据库
         user.save()
 
-        return user
+        from rest_framework_jwt.settings import api_settings
+
+        jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
+        jwt_encode_handler = api_settings.JWT_ENCODE_HANDLER
+
+        payload = jwt_payload_handler(user)
+        token = jwt_encode_handler(payload)
+
+        user.token = token
+
+        return user  # 在进行序列化的那一刻,就会多增加 token 
 
