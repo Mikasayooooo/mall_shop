@@ -47,7 +47,7 @@ SECRET_KEY = '_r^c8pq*%blhb4x^tyx=vxz)^bulhi*eo=2wqm-)bg0z6!iu0l'
 DEBUG = True
 
 # 允许哪些域名访问django
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost','www.mall.site','api.mall.site']
 
 # Application definition
 
@@ -70,7 +70,7 @@ INSTALLED_APPS = [
 # from corsheaders.middleware import CorsMiddleware
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware', # 最外层的中间件
+    'corsheaders.middleware.CorsMiddleware',  # 最外层的中间件
 
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -115,7 +115,7 @@ DATABASES = {
         'USER': 'mall_shop',  # 数据库用户名
         'PASSWORD': 'mysql',
         'HOST': '192.168.36.130',
-        'PORT': 3306,  #数据库端口
+        'PORT': 3306,  # 数据库端口
     }
 }
 
@@ -237,14 +237,14 @@ REST_FRAMEWORK = {
 # mall.apps.users.models.User
 AUTH_USER_MODEL = 'users.User'  # 应用名.模型名
 
-
-
 # CORS 追加⽩名单
 CORS_ORIGIN_WHITELIST = (
- '127.0.0.1:8080',
- '127.0.0.1:34978',
- 'localhost:8080',
- 'localhost:34978',
+    '127.0.0.1:8080',
+    '127.0.0.1:41533',
+    'localhost:8080',
+    'localhost:41533',
+    'www.mall.site:41533',
+    'api.mall.site:8000'
 )
 
-CORS_ALLOW_CREDENTIALS = True # 允许跨域携带cookie
+CORS_ALLOW_CREDENTIALS = True  # 允许跨域携带cookie
