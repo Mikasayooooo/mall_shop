@@ -19,7 +19,8 @@ var vm = new Vue({
 
         sms_code_tip: '获取短信验证码',
         error_sms_code_message: '', // 短信验证码错误提示
-        error_name_message:'',
+        error_name_message: '',  // 用户名重复错误提示
+        error_phone_message: '', // 手机号重复错误提示
 
     },
     methods: {
@@ -65,12 +66,30 @@ var vm = new Vue({
                 this.error_check_password = false;
             }
         },
+        // 检查⼿机号
         check_phone: function () {
-            var re = /^1[345789]\d{9}$/;
+            var re = /^1[3-9]\d{9}$/;
             if (re.test(this.mobile)) {
                 this.error_phone = false;
             } else {
+                this.error_phone_message = '您输⼊的⼿机号格式不正确';
                 this.error_phone = true;
+            }
+            if (this.error_phone == false) {
+                axios.get(this.host + '/mobiles/' + this.mobile + '/count/', {
+                    responseType: 'json'
+                })
+                    .then(response => {
+                        if (response.data.count > 0) {
+                            this.error_phone_message = '⼿机号已存在';
+                            this.error_phone = true;
+                        } else {
+                            this.error_phone = false;
+                        }
+                    })
+                    .catch(error => {
+                        console.log(error.response.data);
+                    })
             }
         },
         check_sms_code: function () {
