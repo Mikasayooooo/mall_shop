@@ -6,10 +6,10 @@ import random
 from django_redis import get_redis_connection
 from mall.libs.yuntongxun.sms import CCP  # 在apps 设置 Sources Root , 就能有代码提示，且不报红
 from rest_framework.response import Response
-
 from rest_framework import status
 
 from . import constants
+from celery_tasks.sms.tasks import send_sms_code
 
 import logging
 
@@ -57,6 +57,8 @@ class SMSCodeView(APIView):
         # 【云通讯】您使用的是云通讯短信模板，您的验证码是{1}，请于{2}分钟内正确输入
 
         # CCP().send_template_sms(mobile, [sms_code, constants.SMS_CODE_REDIS_EXPIRES // 60], 1)
+        # send_sms_code(mobile,sms_code)  调用普通函数
+        send_sms_code.delay(mobile,sms_code)  # 触发异步任务
 
         # 8.响应
         return Response({'message': 'ok'})
