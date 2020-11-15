@@ -9,6 +9,8 @@ from rest_framework.response import Response
 
 from rest_framework import status
 
+from . import constants
+
 import logging
 
 logger = logging.getLogger('django')
@@ -36,16 +38,17 @@ class SMSCodeView(APIView):
         logger.info(sms_code)
 
         # 5.把验证码存储到redis数据库
-        redis_conn.setex('sms_%s' % mobile, 300, sms_code)
+        redis_conn.setex('sms_%s' % mobile, constants.SMS_CODE_REDIS_EXPIRES, sms_code)
 
         # 6.存储一个标记，表示此手机号已经发送过短信,标记有效期60s
-        redis_conn.setex('send_flag_%s' %mobile,60,1)
+        redis_conn.setex('send_flag_%s' %mobile,constants.SEND_SMS_CODE_INTERVAL,1)
 
         # 7.利用荣联云通讯发送短信验证码
         # 注意： 测试的短信模板编号为1
         # 参数1: 要给哪个手机发送短信  参数2: ["验证码",有效期]   参数3: 模板编号默认就是1
         # 【云通讯】您使用的是云通讯短信模板，您的验证码是{1}，请于{2}分钟内正确输入
-        # CCP().send_template_sms(mobile, [sms_code, 5], 1)
+
+        # CCP().send_template_sms(mobile, [sms_code, constants.SMS_CODE_REDIS_EXPIRES // 60], 1)
 
         # 8.响应
         return Response({'message': 'ok'})
