@@ -14,3 +14,4 @@ def send_sms_code(mobile,sms_code):
     :return:
     '''
     # CCP().send_template_sms(mobile, [sms_code, constants.SMS_CODE_REDIS_EXPIRES // 60], 1)
+    print('{}------------>{}'.format(mobile,sms_code))
