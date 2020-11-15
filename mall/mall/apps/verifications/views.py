@@ -37,7 +37,7 @@ class SMSCodeView(APIView):
         sms_code = '%06d' % random.randint(0, 999999)
         logger.info(sms_code)
 
-        # 创建redis管道：（把多次redis操作装入管道中，将来一次性取执行，减少redis的连接操作）
+        # 创建redis管道：（把多次redis操作装入管道中，将来一次性取执行，减少redis的连接操作，提升redis性能）
         pl = redis_conn.pipeline()
 
         # 5.把验证码存储到redis数据库
