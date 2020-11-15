@@ -5,6 +5,8 @@ from . models import User
 import re
 from django_redis import get_redis_connection
 
+from rest_framework_jwt.settings import api_settings
+
 
 class CreateUserSerializer(serializers.ModelSerializer):
     '''注册序列化器'''
@@ -17,8 +19,8 @@ class CreateUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User  # 从User模型中映射序列化器字段
-        # fields = '__all__'
-        fields = ['id','username','password','password2','mobile','sms_code','allow']
+        # fields = '__all__'                               模型临时加一个token属性,token别忘加
+        fields = ['id','username','password','password2','mobile','sms_code','allow','token']
         extra_kwargs = {
             'username': {
                 'min_length': 5,
@@ -102,15 +104,13 @@ class CreateUserSerializer(serializers.ModelSerializer):
         # 保存到数据库
         user.save()
 
-        from rest_framework_jwt.settings import api_settings
+        jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER #引用jwt中的叫jwt_payload_handler函数(生成payload)
+        jwt_encode_handler = api_settings.JWT_ENCODE_HANDLER #函数引用,生成jwt
 
-        jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
-        jwt_encode_handler = api_settings.JWT_ENCODE_HANDLER
+        payload = jwt_payload_handler(user) #根据user生成用户相关的载荷
+        token = jwt_encode_handler(payload) #传入载荷生成完整的jwt
 
-        payload = jwt_payload_handler(user)
-        token = jwt_encode_handler(payload)
+        user.token = token  # 这里的token必须和上面序列化器中定义的一致
 
-        user.token = token
-
-        return user  # 在进行序列化的那一刻,就会多增加 token 
+        return user  # 在进行序列化的那一刻,就会多增加 token
 
