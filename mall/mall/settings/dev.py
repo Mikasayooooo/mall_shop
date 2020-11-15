@@ -46,7 +46,8 @@ SECRET_KEY = '_r^c8pq*%blhb4x^tyx=vxz)^bulhi*eo=2wqm-)bg0z6!iu0l'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# 允许哪些域名访问django
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 # Application definition
 
@@ -58,11 +59,19 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    # 第三方放中间
     'rest_framework',  # DRF
+    'corsheaders',
+
     'users.apps.UsersConfig'  # 用户模块
 ]
 
+# 通过这种方法
+# from corsheaders.middleware import CorsMiddleware
+
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware', # 最外层的中间件
+
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -227,3 +236,15 @@ REST_FRAMEWORK = {
 # 修改Django认证系统的用户模型类
 # mall.apps.users.models.User
 AUTH_USER_MODEL = 'users.User'  # 应用名.模型名
+
+
+
+# CORS 追加⽩名单
+CORS_ORIGIN_WHITELIST = (
+ '127.0.0.1:8080',
+ '127.0.0.1:34978',
+ 'localhost:8080',
+ 'localhost:34978',
+)
+
+CORS_ALLOW_CREDENTIALS = True # 允许跨域携带cookie
