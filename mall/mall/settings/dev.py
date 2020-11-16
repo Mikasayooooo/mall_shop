@@ -254,6 +254,8 @@ CORS_ALLOW_CREDENTIALS = True  # 允许跨域携带cookie
 # JWT
 JWT_AUTH = {
  # JWT的有效期
- 'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1),
+'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1),
 
+# 修改JWT登录视图函数的构造响应数据的函数
+'JWT_RESPONSE_PAYLOAD_HANDLER': 'users.utils.jwt_response_payload_handler'
 }
