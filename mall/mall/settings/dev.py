@@ -64,7 +64,8 @@ INSTALLED_APPS = [
     'rest_framework',  # DRF
     'corsheaders',
 
-    'users.apps.UsersConfig'  # 用户模块
+    'users.apps.UsersConfig',  # 用户模块
+    'oauth.apps.OauthConfig',  # QQ模块
 ]
 
 # 通过这种方法

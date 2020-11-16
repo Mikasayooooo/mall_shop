@@ -46,6 +46,7 @@ class UsernameMobileAuthBackend(ModelBackend):
         user = get_user_by_account(username)
 
         # 判断当前前端传入的密码是否正确
+        # 注意顺序,必须先判断user是否存在,在判断密码是否正确
         if user and user.check_password(password):
 
             # 返回user
