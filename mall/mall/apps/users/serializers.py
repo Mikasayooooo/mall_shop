@@ -76,7 +76,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
         # 向 redis存储数据时都是以字符串进行存储的,取出来后都是bytes类型[bytes]
 
         # 首先判断 redis里存的验证码是否过期,再判断 两个验证码是否相等,先后顺序注意!!!
-        if real_sms_code != None or attrs['sms_code'] != real_sms_code.decode():
+        if real_sms_code is None or attrs['sms_code'] != real_sms_code.decode():
                                         # 注意这里 从redis中取出数据里需要进行解码操作
             raise serializers.ValidationError('验证码错误')
         return attrs

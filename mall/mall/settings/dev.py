@@ -259,3 +259,9 @@ JWT_AUTH = {
 # 修改JWT登录视图函数的构造响应数据的函数
 'JWT_RESPONSE_PAYLOAD_HANDLER': 'users.utils.jwt_response_payload_handler'
 }
+
+
+# 修改默认的认证后端
+AUTHENTICATION_BACKENDS = [
+ 'users.utils.UsernameMobileAuthBackend',
+]
