@@ -114,3 +114,13 @@ class CreateUserSerializer(serializers.ModelSerializer):
 
         return user  # 在进行序列化的那一刻,就会多增加 token
 
+
+
+# 序列化字段在 模型类中全都有,只需要通过ModelSerializer映射过来就行
+# 只需要序列化-->json(给前端),所以不需要关注类型,选项,校验等
+class UserDetailSerializer(serializers.ModelSerializer):
+    '''用户详细序列化器'''
+
+    class Meta:
+        model = User
+        fields = ['id','username','mobile','email','eamil_active']

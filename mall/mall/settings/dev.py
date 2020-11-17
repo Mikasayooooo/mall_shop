@@ -233,6 +233,13 @@ LOGGING = {
 REST_FRAMEWORK = {
     # 异常处理
     'EXCEPTION_HANDLER': 'mall.utils.exceptions.exception_handler',
+
+    # 认证
+     'DEFAULT_AUTHENTICATION_CLASSES': (
+         'rest_framework_jwt.authentication.JSONWebTokenAuthentication',  # JWT认证类,放在第一位默认项
+         'rest_framework.authentication.SessionAuthentication',
+         'rest_framework.authentication.BasicAuthentication',
+     ),
 }
 
 # 修改Django认证系统的用户模型类

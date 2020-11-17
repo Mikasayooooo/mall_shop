@@ -13,4 +13,6 @@ urlpatterns = [
     # JWT登录
     url(r'^authorizations/$', obtain_jwt_token),   # 内部认证代码还是django ,登录成功生成token
     #     obtain_jwt_token = ObtainJSONWebToken.as_view()
+    # 获取用户详情
+    url(r'^user/$', views.UserDetailView.as_view()),
 ]
