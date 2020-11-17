@@ -15,4 +15,6 @@ urlpatterns = [
     #     obtain_jwt_token = ObtainJSONWebToken.as_view()
     # 获取用户详情
     url(r'^user/$', views.UserDetailView.as_view()),
+    # 更新邮箱
+    url(r'^email/$', views.EmailView.as_view()),
 ]

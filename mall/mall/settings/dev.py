@@ -269,13 +269,13 @@ JWT_AUTH = {
 'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1),
 
 # 修改JWT登录视图函数的构造响应数据的函数
-'JWT_RESPONSE_PAYLOAD_HANDLER': 'users.utils.jwt_response_payload_handler'
+'JWT_RESPONSE_PAYLOAD_HANDLER': 'users.utils.jwt_response_payload_handler' # 修改成自己定义的,是为了实现返回token和其他值
 }
 
 
 # 修改默认的认证后端
 AUTHENTICATION_BACKENDS = [
- 'users.utils.UsernameMobileAuthBackend',
+ 'users.utils.UsernameMobileAuthBackend',  # 修改成自己定义的,是为了实现多账户登录
 ]
 
 

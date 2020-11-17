@@ -1,7 +1,7 @@
 from django.shortcuts import render
-from rest_framework.generics import CreateAPIView,RetrieveAPIView
+from rest_framework.generics import CreateAPIView,RetrieveAPIView,UpdateAPIView
 
-from .serializers import CreateUserSerializer
+from .serializers import CreateUserSerializer,UserDetailSerializer,EmailSerializer
 
 from rest_framework.views import APIView
 from .models import User
@@ -19,7 +19,6 @@ class UserView(CreateAPIView):
 
 
 
-
 class UsernameView(APIView):
     '''判断用户是否已经注册'''
 
@@ -34,7 +33,7 @@ class UsernameView(APIView):
         }
 
         # 响应
-        Response(data)
+        return Response(data)
 
 
 
@@ -52,7 +51,7 @@ class MobileCountView(APIView):
         }
 
         # 响应
-        Response(data)
+        return Response(data)
 
 
 
@@ -60,7 +59,7 @@ class MobileCountView(APIView):
 class UserDetailView(RetrieveAPIView):
     '''用户详细信息展示'''
 
-    serializer_class = ''
+    serializer_class = UserDetailSerializer
     # queryset = User.objects.all()  现在省略pk,重写get_object()方法,减少数据库查询
 
     # 指定权限,只有通过认证的用户才能访问当前视图
@@ -68,4 +67,16 @@ class UserDetailView(RetrieveAPIView):
 
     def get_object(self):
         '''重写此方法返回 要展示的用户模型对象'''
+        return self.request.user
+
+
+
+# PUT /email/
+class EmailView(UpdateAPIView):
+    '''更新用户邮箱'''
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = EmailSerializer
+
+    def get_object(self):
         return self.request.user

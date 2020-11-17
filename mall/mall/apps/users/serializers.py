@@ -116,7 +116,7 @@ class CreateUserSerializer(serializers.ModelSerializer):
 
 
 
-# 序列化字段在 模型类中全都有,只需要通过ModelSerializer映射过来就行
+# 序列化字段在 模型类中有,只需要通过ModelSerializer映射过来就行
 # 只需要序列化-->json(给前端),所以不需要关注类型,选项,校验等
 class UserDetailSerializer(serializers.ModelSerializer):
     '''用户详细序列化器'''
@@ -124,3 +124,33 @@ class UserDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id','username','mobile','email','eamil_active']
+
+
+
+class EmailSerializer(serializers.ModelSerializer):
+    '''更新邮箱序列化器'''
+
+    class Meta:
+        model = User
+        fields = ['id','email']  # 这里的邮箱允许为空,不符合我们的要求
+        # email = models.EmailField(_('email address'), blank=True)
+        extra_kwargs = {
+            'email':{
+                'required':True  # 不允许为空,
+            }
+        }
+
+
+    def update(self, instance, validated_data):
+        '''此方法重写目的不是为了修改,而是借用此时机 发送激活邮箱'''
+
+        instance.email = validated_data.get('email')
+        instance.save()
+
+        # 将来需要在此继续写发邮箱的功能
+
+        return instance
+
+
+
+
