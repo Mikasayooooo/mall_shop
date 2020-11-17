@@ -20,4 +20,6 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^', include('verifications.urls')),  # 发送短信模块
     url(r'^', include('users.urls')),  # 用户模块
+    url(r'^oauth/', include('oauth.urls')),  # QQ模块
+    # 不要在主路由后面加$,不然子路由匹配不到
 ]
