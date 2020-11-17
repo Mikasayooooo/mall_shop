@@ -10,6 +10,7 @@ from django.conf import settings   # settings 代表 dev文件对象
 
 from rest_framework_jwt.settings import api_settings
 from oauth.models import OAuthQQUser
+from oauth.serializers import QQAuthUserSerializer
 from oauth.utils import generate_save_user_token
 import logging
 
@@ -37,7 +38,7 @@ class QQauthURLView(APIView):
                         redirect_uri=settings.QQ_REDIRECT_URI,
                         state=next)
 
-        #  调用它里面的方法 拼接好QQ登录网址
+        #  3.调用它里面的方法 拼接好QQ登录网址
         login_url = oauth.get_qq_url()
         return Response({'login_url': login_url})
 
@@ -94,3 +95,30 @@ class QQAuthUserView(APIView):
                 'username':user.username,
                 'user_id':user.user_id
             })
+
+
+    def post(self,request):
+        '''openid绑定用户接口'''
+
+        # 1.创建序列化器进行反序列化
+        serializer = QQAuthUserSerializer(data=request.data)
+
+        # 2.调用is_valid()进行校验
+        serializer.is_valid(raise_exception=True)
+
+        # 3.调用序列化器的save方法
+        user = serializer.save()   # 因为序列化器传入data,说明调用了create()方法,create()方法返回的是个user对象
+
+        # 4.生成JWT状态保存 token
+        jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER  # 引用jwt中的叫jwt_payload_handler函数(生成payload)
+        jwt_encode_handler = api_settings.JWT_ENCODE_HANDLER  # 函数引用,生成jwt
+
+        payload = jwt_payload_handler(user)  # 根据user生成用户相关的载荷
+        token = jwt_encode_handler(payload)  # 传入载荷生成完整的jwt
+
+        # 5.响应
+        return Response({
+            'token': token,
+            'username': user.username,
+            'user_id': user.user_id
+        })
