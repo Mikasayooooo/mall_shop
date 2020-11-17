@@ -3,6 +3,7 @@ from rest_framework import serializers
 
 from users.models import User
 from .utils import check_save_user_token
+from .models import OAuthQQUser
 
 
 class QQAuthUserSerializer(serializers.Serializer):
@@ -29,13 +30,13 @@ class QQAuthUserSerializer(serializers.Serializer):
         # 2.校验验证码
         # 校验验证码
         redis_conn = get_redis_connection('verify_codes')
-        mobile = attrs['mobile']
+        mobile = attrs.get('mobile')
         real_sms_code = redis_conn.get('sms_%s' % mobile)
 
         # 向 redis存储数据时都是以字符串进行存储的,取出来后都是bytes类型[bytes]
 
         # 首先判断 redis里存的验证码是否过期,再判断 两个验证码是否相等,先后顺序注意!!!
-        if real_sms_code is None or attrs['sms_code'] != real_sms_code.decode():
+        if real_sms_code is None or attrs.get('sms_code') != real_sms_code.decode():
             # 注意这里 从redis中取出数据里需要进行解码操作
             raise serializers.ValidationError('验证码错误')
 
@@ -45,7 +46,7 @@ class QQAuthUserSerializer(serializers.Serializer):
         except User.DoesNotExist:
             pass
         else:
-            if not user.check_password(attrs['password']):
+            if not user.check_password(attrs.get('password')):
                 raise serializers.ValidationError('密码错误')
             else:
                 # 如果用户已经存在并且密码正确,把当前的user对象存储到反序列化大字典中以备后期使用
@@ -55,4 +56,24 @@ class QQAuthUserSerializer(serializers.Serializer):
 
 
     def create(self, validated_data):
-        pass
+        # 1.获取validated_data中的user,如果能取到user说明用户已经存在
+        user = validated_data.get('user')  # 一定要用get,validated_data不存在,就会报错
+
+        # 2.如果validated_data里面没有user,创建一个新用户
+        if not user:
+            user = User(
+                # 用户既然使用第三方登录,就表明用户懒得注册
+                username=validated_data.get('mobile'),  # 一定要用get,validated_data不存在,就会报错
+                mobile=validated_data.get('mobile')
+            )
+
+        # 3.把openid和user绑定
+        OAuthQQUser.objects.create(
+            openid=validated_data.get('openid'),
+            user=user  # 如果直接赋值,直接写关联模型的对象即可
+            # user_id=user.id  外键_id 必须赋值 关联模型的id
+        )
+
+        # 4.返回user
+        return user
+

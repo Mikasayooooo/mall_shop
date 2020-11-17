@@ -48,7 +48,7 @@ SECRET_KEY = '_r^c8pq*%blhb4x^tyx=vxz)^bulhi*eo=2wqm-)bg0z6!iu0l'
 DEBUG = True
 
 # 允许哪些域名访问django
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost','www.mall.site','api.mall.site']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost','www.mall.site','api.mall.site','www.meiduo.site','api.meiduo.site']
 
 # Application definition
 
@@ -246,7 +246,11 @@ CORS_ORIGIN_WHITELIST = (
     'localhost:8080',
     'localhost:41533',
     'www.mall.site:41533',
+    'www.mall.site:8080',
+    'www.meiduo.site:41533',
+    'www.meiduo.site:8080',
     'api.mall.site:8000'
+    'api.meiduo.site:8000'
 )
 
 CORS_ALLOW_CREDENTIALS = True  # 允许跨域携带cookie
