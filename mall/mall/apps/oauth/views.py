@@ -7,11 +7,12 @@ from rest_framework import status
 from django.conf import settings   # settings 代表 dev文件对象
 
 
-import logging
 
 from rest_framework_jwt.settings import api_settings
-
 from oauth.models import OAuthQQUser
+from oauth.utils import generate_save_user_token
+import logging
+
 
 logger = logging.getLogger('django')
 
@@ -46,38 +47,39 @@ class QQAuthUserView(APIView):
     '''QQ登录 成功后的回调处理'''
 
     def get(self,requset):
-        # 获取前端传入的code
+        # 1.获取前端传入的code
         code = requset.query_params.get('code')
         if not code:
             return Response({'message':'缺少code'},status=status.HTTP_400_BAD_REQUEST)
 
-        # 创建QQ登录工具对象
+        # 2.创建QQ登录工具对象
         oauth = OAuthQQ(client_id=settings.QQ_CLIENT_ID, client_secret=settings.QQ_CLIENT_SECRET,
                         redirect_uri=settings.QQ_REDIRECT_URI)  # 不需要next参数
 
         try:
-            # 调用它里面get_access_token(code) 用code响应QQ服务器获取access_token
+            # 3.调用它里面get_access_token(code) 用code响应QQ服务器获取access_token
             access_token = oauth.get_access_token(code)
 
-            # 调用它里面get_open_id(access_token) 用access_token响应QQ服务器获取openid
+            # 4.调用它里面get_open_id(access_token) 用access_token响应QQ服务器获取openid
             openid = oauth.get_open_id(access_token)
         except Exception as e:  # 捕获其他异常
             logging.info(e)  # 输出到终端和日志文件中
             return Response({'message':'QQ服务器不可用'},status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
-        # 查询数据库有没有这个openid
+        # 5.查询数据库有没有这个openid
         try:
             authQQUserModel = OAuthQQUser.objects.get(openid=openid)
         except OAuthQQUser.DoesNotExist:
 
-            # 如果没有这个openid,没有绑定用户,应该创建一个新用户和此openid绑定
+            # 6.如果没有这个openid,没有绑定用户,把openid加密之后响应给前端,让前端先暂存一会,等待绑定时使用
             # access_token是由于前端写错了,本应该是openid
             # 没有绑定openid，无法识别用户，不能使用服务器资源，所以只能将openid传给前端，让前端保存
             # 因为openid是QQ用户的唯一身份标志,直接传前端可见,需要进行加密传输
-            return Response({'access_token':openid})
-            pass
+            access_token_openid = generate_save_user_token(openid)
+            return Response({'access_token':access_token_openid})
+
         else:
-            # 如果有这个openid,直接代码登录成功,给前端返回JWT状态保存信息
+            # 7.如果有这个openid,直接代码登录成功,给前端返回JWT状态保存信息
             # 获取到openid 关联的user
             user = authQQUserModel.user  # 通过外键获取user模型对象
 
