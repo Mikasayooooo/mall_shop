@@ -145,14 +145,25 @@ class EmailSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         '''此方法重写目的不是为了修改,而是借用此时机 发送激活邮箱'''
 
+        print('instance--------->',instance)
+        print('validated_data---------->',validated_data)
         instance.email = validated_data.get('email')
         instance.save()
+        print('instance--------->', type(instance))
+        '''
+        instance---------> liuhaoli
+        validated_data----------> {'email': '1056205431@qq.com'}
+        instance---------> <class 'users.models.User'>
+        '''
 
         # 将来需要在此继续写发邮箱的功能
         # 异步发邮件
 
         # ⽣成激活链接
-        verify_url = '使⽤itsdangerous⽣成激活链接'
+        # token 后面需要传用户对象,user,直接在模型中定义,self即用户对象
+        # http://www.meiduo.site:8080/success_verify_email.html?token=1'
+        # verify_url = '使⽤itsdangerous⽣成激活链接'
+        verify_url = instance.generate_email_verify_url()
 
         send_verify_email.delay(instance.email,verify_url=verify_url)
 
