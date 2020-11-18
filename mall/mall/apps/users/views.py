@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from rest_framework import request, status
 from rest_framework.generics import CreateAPIView,RetrieveAPIView,UpdateAPIView
 
 from .serializers import CreateUserSerializer,UserDetailSerializer,EmailSerializer
@@ -80,3 +81,27 @@ class EmailView(UpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+
+class EmailVerifyView(APIView):
+    '''激活用户邮箱'''
+
+    def get(self,request):
+        # 1.获取前端查询字符串中传入的token
+        token = request.query_params.get('token')
+
+        # 2.把token解密,并查询对应的user
+        '''check_verify_email_token的目的就是为了得到user实例对象,如果check_verify_email_token作为实例方法的话,
+        需要使用user实例对象来调用,有冲突,所以这里改用 静态方法调用,类方法需要传cls,不需要'''
+        user = User.check_verify_email_token(token)
+
+        # 3.修改当前user的email_active为True
+        if not user:
+            return Response({'message':'激活失败'},status=status.HTTP_400_BAD_REQUEST)
+
+        user.email_active = True
+        user.save()
+
+        # 4.响应
+        return Response({'message':'激活成功'})
