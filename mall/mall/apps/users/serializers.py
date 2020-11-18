@@ -1,11 +1,12 @@
 from rest_framework import serializers
-
-from . models import User
-
 import re
 from django_redis import get_redis_connection
-
 from rest_framework_jwt.settings import api_settings
+
+
+from . models import User
+from celery_tasks.email.tasks import send_verify_email
+
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -149,6 +150,11 @@ class EmailSerializer(serializers.ModelSerializer):
 
         # 将来需要在此继续写发邮箱的功能
         # 异步发邮件
+
+        # ⽣成激活链接
+        verify_url = '使⽤itsdangerous⽣成激活链接'
+
+        send_verify_email.delay(instance.email,verify_url=verify_url)
 
         return instance
 

@@ -1,5 +1,10 @@
 from celery import Celery
 
+# 为celery使⽤django配置⽂件进⾏设置
+import os
+if not os.getenv('DJANGO_SETTINGS_MODULE'):
+    os.environ['DJANGO_SETTINGS_MODULE'] = 'mall.settings.dev'
+
 
 # 1.创建celery实例对象
 celery_app = Celery('mall')
