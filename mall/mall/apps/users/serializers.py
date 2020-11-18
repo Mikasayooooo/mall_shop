@@ -148,6 +148,7 @@ class EmailSerializer(serializers.ModelSerializer):
         instance.save()
 
         # 将来需要在此继续写发邮箱的功能
+        # 异步发邮件
 
         return instance
 
