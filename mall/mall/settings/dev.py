@@ -60,12 +60,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    # 第三方放中间
+    # 第三方放中间,自己的放下边
     'rest_framework',  # DRF
     'corsheaders',
 
     'users.apps.UsersConfig',  # 用户模块
     'oauth.apps.OauthConfig',  # QQ模块
+    'areas.apps.AreasConfig',  # 省市区模块
 ]
 
 # 通过这种方法
