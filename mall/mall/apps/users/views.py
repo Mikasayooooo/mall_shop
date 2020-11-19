@@ -100,6 +100,11 @@ class EmailVerifyView(APIView):
         if not user:
             return Response({'message':'激活失败'},status=status.HTTP_400_BAD_REQUEST)
 
+
+        if user.email_active:
+            return Response({'message':'该邮箱已经激活'})
+
+
         user.email_active = True
         user.save()
 
