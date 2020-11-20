@@ -187,3 +187,10 @@ class UserAddressSerializer(serializers.ModelSerializer):
         user = self.context['request'].user # 获取用户模型对象
         validated_data['user'] = user  #将用户模型保存到字典中
         return Address.objects.create(**validated_data)
+
+
+class AddressTitleSerializer(serializers.ModelSerializer):
+    '''标题序列化器'''
+    class Meta:
+        model = Address
+        fields = ['title']

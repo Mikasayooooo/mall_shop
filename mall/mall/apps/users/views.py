@@ -1,13 +1,15 @@
 from django.shortcuts import render
 from rest_framework import request, status
+from rest_framework.decorators import action
 from rest_framework.generics import CreateAPIView,RetrieveAPIView,UpdateAPIView,GenericAPIView
-
-from .serializers import CreateUserSerializer,UserDetailSerializer,EmailSerializer,UserAddressSerializer
-
 from rest_framework.views import APIView
-from .models import User,Address
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.viewsets import GenericViewSet
+
+
+from .models import User,Address
+from .serializers import CreateUserSerializer,UserDetailSerializer,EmailSerializer,UserAddressSerializer,AddressTitleSerializer
 
 # Create your views here.
 
@@ -113,13 +115,21 @@ class EmailVerifyView(APIView):
 
 
 
-class AddressViewSet(GenericAPIView):
+class AddressViewSet(GenericViewSet):
     '''用户收货地址增删改查'''
 
     permission_classes = [IsAuthenticated]
     serializer_class = UserAddressSerializer
+    # queryset =
+    def get_queryset(self):
+        # return Address.objects.filter(is_deleted=False) 这是查所有用户的地址
+        return self.request.user.addresses.filter(is_deleted=False)
+        # 这是登录用户的地址
 
+
+    '''POST /addresses/ 新建 -> create'''
     def create(self,request):
+        '''创建地址'''
 
         # 1.获取user对象
         user = request.user
@@ -134,10 +144,72 @@ class AddressViewSet(GenericAPIView):
         serializer = self.get_serializer(data=request.data)
 
         # 4.调用序列化器 的is_valid()
-        serializer.is_vaild(raise_exception=True)
+        serializer.is_valid(raise_exception=True)
 
         # 5.调用序列化器 的save()
         serializer.save()
 
         # 6.响应
         return Response(serializer.data,status=status.HTTP_201_CREATED)
+
+
+
+    '''GET /addresses/ 查询 -> list'''
+    def list(self,request):
+        '''用户地址列表数据'''
+
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(instance=queryset,many=True)
+        user = self.request.user  # self 上也有request对象
+        return Response({
+            'user_id':user.id,
+            'default_address_id':user.default_address_id,
+            'limit':20,
+            'addresses':serializer.data
+        })
+
+
+
+    '''DELETE /addresses/<pk>/ 删除 -> destroy'''
+    def destroy(self,request,pk=None):
+        '''删除地址'''
+
+        address = self.get_object()
+
+        address.is_deleted = True
+        address.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+
+    # PUT /addresses/<pk>/ 修改 -> update
+    '''
+参数1：methods：声明该action对应的请求方式，默认GET
+参数2：detail：声明该action是否和单一资源对应（传递pk），以及是否是xxx/<pk>/action方法名/格式的请求路径
+True：表示请求路径是xxx/<pk>/action方法名/格式
+False：表示请求路径是xxx/action方法名/格式
+    '''
+
+    '''PUT /addresses/<pk>/title/ 设置标题 -> title'''
+    @action(methods=['put'],detail=True)
+    def title(self,request,pk=None):
+        '''设置标题'''
+
+        address = self.get_object()
+        # 这里只修改标题,所以只要传title即可
+        serializer = AddressTitleSerializer(instance=address,data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+
+
+    '''PUT /addresses/<pk>/status/ 设置默认 -> status'''
+    @action(methods=['put'],detail=True)
+    def status(self,request,pk=None):
+        '''设置默认地址'''
+
+        address = self.get_object()
+        request.user.default_address = address
+        request.user.save()
+        return Response({'message':'OK'},status=status.HTTP_200_OK)
