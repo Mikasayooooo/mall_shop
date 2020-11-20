@@ -2,7 +2,7 @@ from django.shortcuts import render
 from rest_framework import request, status
 from rest_framework.generics import CreateAPIView,RetrieveAPIView,UpdateAPIView,GenericAPIView
 
-from .serializers import CreateUserSerializer,UserDetailSerializer,EmailSerializer
+from .serializers import CreateUserSerializer,UserDetailSerializer,EmailSerializer,UserAddressSerializer
 
 from rest_framework.views import APIView
 from .models import User,Address
@@ -117,7 +117,7 @@ class AddressViewSet(GenericAPIView):
     '''用户收货地址增删改查'''
 
     permission_classes = [IsAuthenticated]
-    serializer_class = ''
+    serializer_class = UserAddressSerializer
 
     def create(self,request):
 
