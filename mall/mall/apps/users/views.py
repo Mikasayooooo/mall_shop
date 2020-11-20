@@ -1,11 +1,11 @@
 from django.shortcuts import render
 from rest_framework import request, status
-from rest_framework.generics import CreateAPIView,RetrieveAPIView,UpdateAPIView
+from rest_framework.generics import CreateAPIView,RetrieveAPIView,UpdateAPIView,GenericAPIView
 
 from .serializers import CreateUserSerializer,UserDetailSerializer,EmailSerializer
 
 from rest_framework.views import APIView
-from .models import User
+from .models import User,Address
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
@@ -110,3 +110,34 @@ class EmailVerifyView(APIView):
 
         # 4.响应
         return Response({'message':'激活成功'})
+
+
+
+class AddressViewSet(GenericAPIView):
+    '''用户收货地址增删改查'''
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = ''
+
+    def create(self,request):
+
+        # 1.获取user对象
+        user = request.user
+        # count = user.addresses.all().count()
+        count = Address.objects.filter(user=user).count()
+
+        # 2.用户收货地址数量有上限,最多20
+        if count > 20:
+            return Response({'message':'收货地址数量上限'},status=status.HTTP_400_BAD_REQUEST)
+
+        # 3.创建序列化器进行反序列化
+        serializer = self.get_serializer(data=request.data)
+
+        # 4.调用序列化器 的is_valid()
+        serializer.is_vaild(raise_exception=True)
+
+        # 5.调用序列化器 的save()
+        serializer.save()
+
+        # 6.响应
+        return Response(serializer.data,status=status.HTTP_201_CREATED)
