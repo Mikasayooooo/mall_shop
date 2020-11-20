@@ -162,7 +162,7 @@ STATIC_URL = '/static/'
 CACHES = {
     "default": {  # 缓存省市区数据
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://192.168.36.130:6379/5",
+        "LOCATION": "redis://127.0.0.1:6379/5",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
@@ -298,3 +298,12 @@ EMAIL_HOST_PASSWORD = 'lhl199710252015'
 # 收件⼈看到的发件⼈
 EMAIL_FROM = 'LHL<liuhaoli233@163.com>'
 
+
+
+# DRF扩展
+REST_FRAMEWORK_EXTENSIONS = {
+ # 缓存时间
+ 'DEFAULT_CACHE_RESPONSE_TIMEOUT': 60 * 60,
+ # 缓存存储
+ 'DEFAULT_USE_CACHE': 'default',
+}

@@ -5,6 +5,7 @@ from rest_framework import status
 from rest_framework.generics import GenericAPIView,ListAPIView,RetrieveAPIView
 from rest_framework.mixins import ListModelMixin
 from rest_framework.viewsets import ReadOnlyModelViewSet
+from rest_framework_extensions.cache.mixins import CacheResponseMixin
 
 
 from .models import Area
@@ -137,10 +138,12 @@ from .serializers import AreaSerializer,SubsSerializer
 
 
 '''ReadOnlyModelViewSet'''
-class AreaViewSet(ReadOnlyModelViewSet):
+# 注意: CacheResponseMixin,ReadOnlyModelViewSet 顺序不能发生变化,会影响到继承链
+# 放前面会优先调用 CacheResponseMixin 的父类 ListCacheResponseMixin 里的 list方法
+class AreaViewSet(CacheResponseMixin,ReadOnlyModelViewSet):
 
     # 指定查询集(两种指定查询集的方式)
-    # queryset =  # 只能指定一个查询集
+    # queryset =  只能指定一个查询集
 
     # 重写
     def get_queryset(self):
