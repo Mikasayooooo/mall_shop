@@ -31,7 +31,10 @@ class SubsSerializer(serializers.ModelSerializer):
     # subs = serializers.PrimaryKeyRelatedField(many=True,read_only=True)
 
     # 序列化时模型中str方法返回值,注意:这里必须加上 many=True,read_only=True
-    # subs = serializers.StringRelatedField(many=True,read_only=True)
+    # subs = serializers.StringRelatedField(many=True)
+
+    # 注意:这里必须加上 many=True,read_only=True,slug_field 必须为字符串
+    # subs = serializers.SlugRelatedField(many=True,read_only=True,slug_field='id')
 
     subs = AreaSerializer(many=True,read_only=True)
 
