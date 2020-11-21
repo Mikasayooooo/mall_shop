@@ -5,7 +5,7 @@ from rest_framework.generics import CreateAPIView,RetrieveAPIView,UpdateAPIView,
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.viewsets import GenericViewSet
+from rest_framework.viewsets import GenericViewSet,ModelViewSet
 
 
 from .models import User,Address
@@ -204,7 +204,7 @@ False：表示请求路径是xxx/action方法名/格式
 
 
 
-    '''PUT /addresses/<pk>/status/ 设置默认 -> status'''
+    '''PUT /addresses/<pk>/status/ 设置默认地址 -> status'''
     @action(methods=['put'],detail=True)
     def status(self,request,pk=None):
         '''设置默认地址'''

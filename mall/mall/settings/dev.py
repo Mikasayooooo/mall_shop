@@ -67,6 +67,8 @@ INSTALLED_APPS = [
     'users.apps.UsersConfig',  # 用户模块
     'oauth.apps.OauthConfig',  # QQ模块
     'areas.apps.AreasConfig',  # 省市区模块
+    'goods.apps.GoodsConfig',  # 商品模块
+    'contents.apps.ContentsConfig',  # 广告模块
 ]
 
 # 通过这种方法
