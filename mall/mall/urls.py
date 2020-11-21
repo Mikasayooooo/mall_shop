@@ -19,6 +19,9 @@ from django.contrib import admin
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
 
+    # 这里的 路由地址不能改 ckeditor/,因为这是 admin站点访问的路径
+    url(r'^ckeditor/', include('ckeditor_uploader.urls')),  # 富文本编辑
+
     url(r'^', include('verifications.urls')),  # 发送短信模块
 
     url(r'^', include('users.urls')),  # 用户模块

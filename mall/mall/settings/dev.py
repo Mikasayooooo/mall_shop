@@ -63,6 +63,8 @@ INSTALLED_APPS = [
     # 第三方放中间,自己的放下边
     'rest_framework',  # DRF
     'corsheaders',
+    'ckeditor',  # 富文本编辑器
+    'ckeditor_uploader',  # 富文本编辑器上传图片模块
 
     'users.apps.UsersConfig',  # 用户模块
     'oauth.apps.OauthConfig',  # QQ模块
@@ -145,9 +147,11 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/1.11/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+# LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'zh-hans'
 
-TIME_ZONE = 'UTC'
+# TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Shanghai'
 
 USE_I18N = True
 
@@ -171,7 +175,7 @@ CACHES = {
     },
     "session": {  # 缓存session
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://192.168.36.130:6379/6",
+        "LOCATION": "redis://127.0.0.1:6379/6",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
@@ -320,3 +324,15 @@ FDFS_CLIENT_CONF = os.path.join(BASE_DIR, 'utils/fastdfs/client.conf')
 
 # django⽂件存储
 DEFAULT_FILE_STORAGE = 'mall.utils.fastdfs.fdfs_storage.FastDFSStorage'
+
+
+
+# 富文本编辑器ckeditor配置
+CKEDITOR_CONFIGS = {
+    'default': {
+        'toolbar': 'full',  # 工具条功能
+        'height': 300,  # 编辑器高度
+        # 'width': 300,  # 编辑器宽
+    },
+}
+CKEDITOR_UPLOAD_PATH = ''  # 上传图片保存路径，使用了FastDFS，所以此处设为''
