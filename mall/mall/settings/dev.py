@@ -354,3 +354,7 @@ CRONJOBS = [
  ('*/1 * * * *', 'contents.crons.generate_static_index_html', '>> /home/python/tools/pyProjects/djangoStudy/djangoProjects/mall_shop/mall/logs/crontab.log')
 #   路径需要设置
 ]
+
+
+# 解决crontab中⽂问题
+CRONTAB_COMMAND_PREFIX = 'LANG_ALL=zh_cn.UTF-8'
