@@ -30,4 +30,6 @@ urlpatterns = [
     # 不要在主路由后面加$,不然子路由匹配不到
 
     url(r'^', include('areas.urls')),  # 省市区模块
+
+    url(r'^', include('goods.urls')),  # 商品模块
 ]
