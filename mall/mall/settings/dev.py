@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'ckeditor',  # 富文本编辑器
     'ckeditor_uploader',  # 富文本编辑器上传图片模块
+    'django_crontab', # 定时任务
 
     'users.apps.UsersConfig',  # 用户模块
     'oauth.apps.OauthConfig',  # QQ模块
@@ -343,3 +344,13 @@ CKEDITOR_UPLOAD_PATH = ''  # 上传图片保存路径，使用了FastDFS，所�
 
 # 静态化主⻚存储路径
 GENERATED_STATIC_HTML_FILES_DIR = os.path.join(os.path.dirname(os.path.dirname(BASE_DIR)), 'front_end_pc')
+
+
+
+# 定时任务
+CRONJOBS = [
+ # 每1分钟执⾏⼀次⽣成主⻚静态⽂件
+ #  分 时 日 月 周
+ ('*/1 * * * *', 'contents.crons.generate_static_index_html', '>> /home/python/tools/pyProjects/djangoStudy/djangoProjects/mall_shop/mall/logs/crontab.log')
+#   路径需要设置
+]
