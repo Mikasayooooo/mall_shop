@@ -3,6 +3,7 @@ from rest_framework.generics import ListAPIView
 
 
 from .models import SKU
+from .serializers import SKUSerializer
 
 
 
@@ -22,4 +23,4 @@ class SKUListView(ListAPIView):
         category_id = self.kwargs.get('category_id')
         return SKU.objects.filter(is_launched=True,category_id=category_id)
 
-    serializer_class = ''
+    serializer_class = SKUSerializer
