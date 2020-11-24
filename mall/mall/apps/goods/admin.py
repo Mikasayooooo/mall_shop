@@ -118,7 +118,7 @@ class SKUImageAdmin(admin.ModelAdmin):
         sku = obj.sku # 通过外键获取图片模型对象所关联的sku模型的id
         # 如果当前sku商品还没有默认图片,就给它设置一张默认图片
         if not sku.default_image_url:
-            sku.default_image_url  = obj
+            sku.default_image_url  = obj.image.url  # 获取图片路径
 
         # 重新生成新的列表静态界面
         generate_static_sku_detail_html.delay(sku.id)

@@ -14,8 +14,9 @@ class SKUListView(ListAPIView):
 
     # 指定过滤器:需要指定排序后端
     filter_backends = (OrderingFilter,)  # 一定要是可迭代的对象,可以使用列表
-    # 指定排序字段：搭配filter_backends使⽤s的
+    # 指定排序字段：搭配filter_backends使⽤的
     ordering_fields = ('create_time', 'price', 'sales') #可以使用列表
+    # 指定排序字段(只能查多, 查的是哪个模型中的数据,里面就指定哪个模型的字段)
 
     # 指定序列化器
     serializer_class = SKUSerializer
