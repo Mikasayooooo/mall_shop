@@ -249,6 +249,9 @@ REST_FRAMEWORK = {
          'rest_framework.authentication.SessionAuthentication',
          'rest_framework.authentication.BasicAuthentication',
      ),
+
+    # 分页
+    'DEFAULT_PAGINATION_CLASS': 'mall.utils.pagination.StandardResultsSetPagination',
 }
 
 # 修改Django认证系统的用户模型类
