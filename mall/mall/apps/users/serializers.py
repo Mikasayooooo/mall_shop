@@ -249,3 +249,11 @@ class UserBrowerHistorySerializer(serializers.Serializer):
 
         # 8.返回响应
         return validated_data
+
+
+class SKUSerializer(serializers.ModelSerializer):
+    '''sku商品序列化器'''
+
+    class Meta:
+        model = SKU
+        fields = ['id','name','price','default_image_url','comments']

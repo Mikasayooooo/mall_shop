@@ -6,10 +6,12 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import GenericViewSet,ModelViewSet
+from django_redis import get_redis_connection
 
 
 from .models import User,Address
-from .serializers import CreateUserSerializer,UserDetailSerializer,EmailSerializer,UserAddressSerializer,AddressTitleSerializer,UserBrowerHistorySerializer
+from .serializers import CreateUserSerializer,UserDetailSerializer,EmailSerializer,UserAddressSerializer,AddressTitleSerializer,UserBrowerHistorySerializer,SKUSerializer
+from goods.models import SKU
 
 # Create your views here.
 
@@ -216,6 +218,8 @@ False：表示请求路径是xxx/action方法名/格式
 
 
 
+# CreateAPIView 父类是 GenericAPIView,所以可以把 两个接口写到一起,不需要再定义路由了
+# 保存和获取的接口
 class UserBrowerHistoryView(CreateAPIView):
     '''用户商品浏览记录'''
 
@@ -223,3 +227,30 @@ class UserBrowerHistoryView(CreateAPIView):
     serializer_class = UserBrowerHistorySerializer
     # 指定用户认证
     permission_classes = [IsAuthenticated]
+
+
+    def get(self,request):
+        '''查询商品浏览记录'''
+
+        # 1.创建redis连接对象
+        redis_conn = get_redis_connection('history')
+
+        # 2.获取当前请求的用户
+        user = request.user
+
+        # 3.获取redis中当前用户的浏览记录列表数据
+        sku_ids = redis_conn.lrange('history_%d' % user.id,0,-1)
+
+        # 4.把sku_id对应的sku模型查询出来
+        # SKU.objects.filter(id__in=sku_ids)  不能保证顺序
+        sku_list = []
+        for sku_id in sku_ids:  # 保证顺序不乱
+            sku = SKU.objects.get(id=sku_id)
+            # redis的列表,存的都是字符串,取出来时,列表里的数据是bytes类型,所以sku_id 是bytes类型
+            sku_list.append(sku)
+
+        # 5.创建序列化器进行序列化
+        serializer = SKUSerializer(sku_list,many=True) # 列表也是多,所以也要加many
+
+        # 6.响应
+        return Response(serializer.data)
