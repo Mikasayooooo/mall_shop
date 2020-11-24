@@ -5,6 +5,7 @@ from rest_framework_jwt.settings import api_settings
 
 from .models import User,Address
 from celery_tasks.email.tasks import send_verify_email
+from goods.models import SKU
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -194,3 +195,57 @@ class AddressTitleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Address
         fields = ['title']
+
+
+class UserBrowerHistorySerializer(serializers.Serializer):
+    '''保存商品浏览记录序列化器'''
+    sku_id = serializers.IntegerField(label='商品sku_id',min_value=1)
+
+    def validate_sku_id(self,value):
+        '''单独对sku_id进行校验'''
+        try:
+            SKU.objects.get(id=value)
+        except SKU.DoesNotExist:
+            return serializers.ValidationError('sku_id不存在')
+        return value
+
+
+    def create(self, validated_data):
+
+        '''
+        1.获取当前的用户模型
+        2.创建redis连接对象
+        3.创建redis管道
+        4.先去重
+        5.再添加到列表的开头
+        6.再截取列表前5个元素
+        7.执行管道
+        8.返回响应
+        :param validated_data:
+        :return:
+        '''
+
+        # 1.获取当前的用户模型
+        sku_id = validated_data.get('sku_id')
+        user = self.context.get('request').user
+
+        # 2.创建redis连接对象
+        redis_conn = get_redis_connection('history')
+
+        # 3.创建redis管道
+        pl = redis_conn.pipeline()
+
+        # 4.先去重
+        pl.lrem('history_%d' % user.id,0,sku_id)  # lrem 键名 次数(0代表删除所有) 指定的值
+
+        # 5.再添加到列表的开头
+        pl.lpush('history_%d' % user.id,sku_id)  # lpush 键名 值1，值2，
+
+        # 6.再截取列表前5个元素
+        pl.ltrim('history_%d' % user.id,0,4) # 保留前4个   ltrim 键名 起始位置 结束位置
+
+        # 7.执行管道
+        pl.execute()
+
+        # 8.返回响应
+        return validated_data

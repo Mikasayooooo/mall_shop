@@ -9,7 +9,7 @@ from rest_framework.viewsets import GenericViewSet,ModelViewSet
 
 
 from .models import User,Address
-from .serializers import CreateUserSerializer,UserDetailSerializer,EmailSerializer,UserAddressSerializer,AddressTitleSerializer
+from .serializers import CreateUserSerializer,UserDetailSerializer,EmailSerializer,UserAddressSerializer,AddressTitleSerializer,UserBrowerHistorySerializer
 
 # Create your views here.
 
@@ -213,3 +213,13 @@ False：表示请求路径是xxx/action方法名/格式
         request.user.default_address = address
         request.user.save()
         return Response({'message':'OK'},status=status.HTTP_200_OK)
+
+
+
+class UserBrowerHistoryView(CreateAPIView):
+    '''用户商品浏览记录'''
+
+    # 指定序列化器
+    serializer_class = UserBrowerHistorySerializer
+    # 指定用户认证
+    permission_classes = [IsAuthenticated]

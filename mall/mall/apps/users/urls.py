@@ -20,6 +20,8 @@ urlpatterns = [
     url(r'^email/$', views.EmailView.as_view()),
     # 激活邮箱
     url(r'^emails/verification/$', views.EmailVerifyView.as_view()),
+    # 商品浏览记录
+    url(r'^browse_histories/$', views.UserBrowerHistoryView.as_view()),
 ]
 
 
