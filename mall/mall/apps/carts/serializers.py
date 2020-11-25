@@ -17,3 +17,5 @@ class CartSerializer(serializers.Serializer):
             SKU.objects.get(id=value)
         except SKU.DoesNotExist:
             raise serializers.ValidationError('sku_id不存在')
+
+        return value

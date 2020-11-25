@@ -1,6 +1,8 @@
 from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
+import pickle,base64
+from rest_framework import status
 
 
 from .serializers import CartSerializer
@@ -41,7 +43,65 @@ class CartView(APIView):
             pass
         else:
             '''非登录用户操作cookie购物车数据'''
-            pass
+
+            '''
+            {
+                'sku_id_1': {'count': 1, 'selected': True},
+                'sku_id_16': {'count': 1, 'selected': True}
+            }
+            '''
+
+            # 获取cookie中的购物车数据
+            cart_str = request.COOKIES.get('cart') # 所有get获取,不存在返回None
+            if cart_str: # 上面之前的cookie购物车里已经有商品
+                # 把字符串转换成bytes类型的字符串
+                cart_str_bytes = cart_str.encode()
+
+                # 把bytes类型的字符串转换成bytes类型
+                cart_bytes = base64.b64decode(cart_str_bytes)
+
+                # 把bytes类型转换成字典
+                cart_dict = pickle.loads(cart_bytes)
+            else:
+                # 如果cookie还没有购物车数据,说明是第一次添加
+                cart_dict = {}
+
+            # 增量计数
+            if sku_id in cart_dict:
+                # 判断当前要添加的sku_id 在字典中是否存在
+                origin_count = cart_dict[sku_id]['count']
+
+                # 原购买数据和本次购买数据相加
+                # count = origin_count + count
+                count += origin_count
+
+            # 把新的商品添加到cart_dict字典中
+            # 不存在就新增,存在就赋值修改
+            cart_dict[sku_id] = {
+                'count':count,
+                'selected':selected
+            }
+
+
+            # 把字典转换成bytes类型
+            cart_bytes = pickle.dumps(cart_dict)
+
+            # 把bytes类型转换成bytes类型的字符串
+            cart_str_bytes = base64.b64encode(cart_bytes)
+
+            # 把bytes类型的字符串转换成字符串
+            cart_str = cart_str_bytes.decode()
+
+            # 使用相同的变量名 作用:
+            # 1.减少变量名
+            # 2.没有变量取引用数据,就会被垃圾回收机制回收,减少内存占用
+
+            # 创建响应对象
+            response = Response(serializer.data,status=status.HTTP_201_CREATED)
+            # 设置cookie
+            response.set_cookie('cart',cart_str)
+
+            return response
 
 
     def get(self,request):
