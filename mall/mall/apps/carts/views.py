@@ -168,7 +168,27 @@ class CartView(APIView):
             pass
         else:
             '''未登录用户获取redis购物车数据'''
-            pass
+            '''
+                {
+                    'sku_id_1': {'count': 1, 'selected': True},
+                    'sku_id_16': {'count': 1, 'selected': True}
+                }
+            '''
+
+            cart_str = request.COOKIES.get('cart')
+            if cart_str:
+                cart_str_bytes = cart_str.encode()
+                cart_bytes = base64.b64decode(cart_str_bytes)
+                cart_dict = pickle.loads(cart_bytes)
+            else:
+                return Response({'message':'没有购物车数据'},status=status.HTTP_400_BAD_REQUEST)
+
+        #根据sku_id 查询sku模型
+        #给每个sku模型多定义一个count和selected属性
+        # 创建序列化器进行序列化
+        # 响应
+        pass
+
 
 
     def put(self,request):
