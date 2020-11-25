@@ -134,7 +134,19 @@ class CartView(APIView):
 
     def get(self,request):
         '''查询'''
-        pass
+
+        try:
+            user = request.user
+        except:
+            user = None
+
+        if user and user.is_authenticated:
+            '''登录用户获取redis购物车数据'''
+            pass
+        else:
+            '''未登录用户获取redis购物车数据'''
+            pass
+
 
     def put(self,request):
         '''修改'''
