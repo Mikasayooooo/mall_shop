@@ -38,6 +38,9 @@ class CartView(APIView):
         except:
             user = None
 
+        # 创建响应对象 , 将响应放在前面,减少冗余代码
+        response = Response(serializer.data,status=status.HTTP_201_CREATED)
+
         # is_authenticated 判断匿名用户还是 登录用户(判断用户是否通过认证)
         if user and user.is_authenticated:
             '''登录用户操作redis购物车数据'''
@@ -64,7 +67,7 @@ class CartView(APIView):
             pl.execute()
 
             # 响应
-            return Response(serializer.data,status=status.HTTP_201_CREATED)
+            # return Response(serializer.data,status=status.HTTP_201_CREATED)
 
         else:
             '''非登录用户操作cookie购物车数据'''
@@ -122,11 +125,11 @@ class CartView(APIView):
             # 2.没有变量取引用数据,就会被垃圾回收机制回收,减少内存占用
 
             # 创建响应对象
-            response = Response(serializer.data,status=status.HTTP_201_CREATED)
+            # response = Response(serializer.data,status=status.HTTP_201_CREATED)
             # 设置cookie
             response.set_cookie('cart',cart_str)
 
-            return response
+        return response
 
 
     def get(self,request):
