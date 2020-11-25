@@ -6,7 +6,7 @@ from rest_framework import status
 from django_redis import get_redis_connection
 
 
-from .serializers import CartSerializer,SKUCartSerializer
+from .serializers import CartSerializer,SKUCartSerializer,CartDeletedSerializer
 from goods.models import SKU
 
 
@@ -302,4 +302,79 @@ class CartView(APIView):
 
     def delete(self,request):
         '''删除'''
-        pass
+
+        # 1.创建序列化器进行反序列化
+        serializer = CartDeletedSerializer(data=request.data)
+
+        # 2.调用is_valid进行校验
+        serializer.is_valid(raise_exception=True)
+
+        # 3.获取校验后的数据
+        sku_id = serializer.validated_data.get('sku_id')
+
+        try:
+            # 执行此代码时会执行认证逻辑,如果登录用户认证成功没有异常,但是未登录用户认证会报异常
+            user = request.user
+        except:
+            user = None
+
+        # 创建响应对象 , 将响应放在前面,减少冗余代码
+        response = Response(serializer.data,status=status.HTTP_204_NO_CONTENT)
+
+        # is_authenticated 判断匿名用户还是 登录用户(判断用户是否通过认证)
+        if user and user.is_authenticated:
+            '''登录用户删除redis购物车数据'''
+
+            # 创建redis连接对象
+            redis_conn = get_redis_connection('cart')
+
+            # 创建管道对象
+            pl = redis_conn.pipeline()
+
+            # 覆盖sku_id 对应的count
+            pl.hset('cart_%d' % user.id, sku_id, count)
+
+            # 如果勾选,就把勾选的商品sku_id存储到set集合中
+            if selected:
+                pl.sadd('selected_%d' % user.id, sku_id)
+            else:
+                # 如果未勾选,就把未勾选的商品sku_id从set集合中移除
+                pl.srem('selected_%d' % user.id, sku_id)
+
+            # 执行管道
+            pl.execute()
+
+        else:
+            '''非登录用户删除cookie购物车数据'''
+
+            # 获取cookie中的购物车数据
+            cart_str = request.COOKIES.get('cart')  # 使用get获取,不存在返回None
+
+            if cart_str:  # 上面之前的cookie购物车里已经有商品
+
+                # 把cookie字符串转换成字典
+                cart_dict = pickle.loads(base64.b64decode(cart_str.encode()))
+            else:
+                # 如果cookie没有取出,提前响应,不执行后续代码
+                return Response({'message': '没有获取到cookie'}, status=status.HTTP_400_BAD_REQUEST)
+
+            # 把要删除的sku_id 从cookie大字典中移除键值对
+            if sku_id in cart_dict:  # 判断要删除的sku_id 是否存在于字典中,存在再去删除
+                # 这里要做 判断,防止sku_id不存在,(商品存在,但不存在购物车里,比如通过postman模拟,就会报错)
+                del cart_dict[sku_id]
+
+            # cookie = {}  不是 None
+            # 如果删除后只剩下{},就没必要存在了,减少内存,严谨一点,将{}删除
+            if len(cart_dict.keys()):
+
+                # 把cookie字典转换成cookie字符串
+                cart_str = base64.b64encode(pickle.dumps(cart_dict)).decode()
+
+                # 设置cookie
+                response.set_cookie('cart', cart_str)
+            else:
+                # 这里要删除cookie,不进行删除,cookie还是没有发生变化
+                # cookie 购物车数据已经清空了
+                response.delete_cookie('cart')
+
+        return response

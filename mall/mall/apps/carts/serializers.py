@@ -31,3 +31,19 @@ class SKUCartSerializer(serializers.ModelSerializer):
         model = SKU
         fields = ['id','name','price','default_image_url','count','selected']
 
+
+
+class CartDeletedSerializer(serializers.Serializer):
+    '''购物车新增和修改序列化器'''
+
+    sku_id = serializers.IntegerField(label='商品id',min_value=1)
+
+    def validate_sku_id(self,value):
+
+        try:
+            SKU.objects.get(id=value)
+        except SKU.DoesNotExist:
+            raise serializers.ValidationError('sku_id不存在')
+
+        return value
+
