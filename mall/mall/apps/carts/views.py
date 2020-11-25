@@ -142,6 +142,29 @@ class CartView(APIView):
 
         if user and user.is_authenticated:
             '''登录用户获取redis购物车数据'''
+
+            # 创建redis连接对象
+            redis_conn = get_redis_connection('cart')
+
+            # 获取hash数据 {sku_id_1: 1, sku_id_16: 2}
+            cart_redis_dict = redis_conn.hgetall('cart_%d' % user.id)
+
+            # 获取set集合数据 {sku_id_1}  SMEMBERS
+            selecteds = redis_conn.smembers('selected_%d' % user.id)
+
+            # 将redis购物车数据格式转换成和cookie购物车数据格式一致
+            cart_dict = {}
+
+            # 遍历hash中的所有键值对
+            for sku_id_bytes,count_bytes in cart_redis_dict.items():
+
+                # 包到字典中的数据 ,注意从redis中取出来的数据是 bytes类型,类型转换
+                cart_dict[int(sku_id_bytes)] = {
+                    'count':int(count_bytes),
+                    'selected':sku_id_bytes in selecteds # 着两个都是bytes类型
+                }
+
+
             pass
         else:
             '''未登录用户获取redis购物车数据'''
