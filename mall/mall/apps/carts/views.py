@@ -44,7 +44,7 @@ class CartView(APIView):
 
         # is_authenticated 判断匿名用户还是 登录用户(判断用户是否通过认证)
         if user and user.is_authenticated:
-            '''登录用户操作redis购物车数据'''
+            '''登录用户新增redis购物车数据'''
             """
                hash: {'sku_id_1': 2, 'sku_id_16':1}
                set: {sku_id_1}
@@ -71,7 +71,7 @@ class CartView(APIView):
             # return Response(serializer.data,status=status.HTTP_201_CREATED)
 
         else:
-            '''非登录用户操作cookie购物车数据'''
+            '''非登录用户新增cookie购物车数据'''
 
             '''
             {
@@ -205,7 +205,98 @@ class CartView(APIView):
 
     def put(self,request):
         '''修改'''
-        pass
+
+        # 1.创建序列化器进行反序列化
+        serializer = CartSerializer(data=request.data)
+
+        # 2.调用is_valid进行校验
+        serializer.is_valid(raise_exception=True)
+
+        # 3.获取校验后的数据
+        sku_id = serializer.validated_data.get('sku_id')
+        count = serializer.validated_data.get('count')
+        selected = serializer.validated_data.get('selected')
+
+        try:
+            # 执行此代码时会执行认证逻辑,如果登录用户认证成功没有异常,但是未登录用户认证会报异常
+            user = request.user
+        except:
+            user = None
+
+        # is_authenticated 判断匿名用户还是 登录用户(判断用户是否通过认证)
+        if user and user.is_authenticated:
+            '''登录用户修改redis购物车数据'''
+
+            # 创建redis连接对象
+            redis_conn = get_redis_connection('cart')
+            pl = redis_conn.pipeline()  # 创建管道
+
+            # 添加 如果添加到sku_id在hash中已经存在,需要做增量
+            # redis_conn.hincrby('cart_%d % user.id, sku_id, count)
+            # redis_conn.hincrby('cart_%d % user.id, sku_id_5, 3)
+            # 如果要添加的sku_id在hash字典中不存在,就是新增,如果存在,就会自动做增量计数再存储
+            pl.hincrby('cart_%d' % user.id, sku_id, count)
+
+            # 把勾选的商品sku_id存储到set集合中
+            if selected:
+                pl.sadd('selected_%d' % user.id, sku_id)
+
+            # 执行管道
+            pl.execute()
+
+            # 响应
+            # return Response(serializer.data,status=status.HTTP_201_CREATED)
+
+        else:
+            '''非登录用户修改cookie购物车数据'''
+
+            # 获取cookie中的购物车数据
+            cart_str = request.COOKIES.get('cart')  # 使用get获取,不存在返回None
+            if cart_str:  # 上面之前的cookie购物车里已经有商品
+                # # 把字符串转换成bytes类型的字符串
+                # cart_str_bytes = cart_str.encode()
+                #
+                # # 把bytes类型的字符串转换成bytes类型
+                # cart_bytes = base64.b64decode(cart_str_bytes)
+                #
+                # # 把bytes类型转换成字典
+                # cart_dict = pickle.loads(cart_bytes)
+
+                # 把cookie字符串转换成字典
+                cart_dict = pickle.loads(base64.b64decode(cart_str.encode()))
+            else:
+                # 如果cookie没有取出,提前响应,不执行后续代码
+                return Response({'message':'没有获取到cookie'},status=status.HTTP_400_BAD_REQUEST)
+
+            # 直接覆盖原cookie字典数据
+            cart_dict[sku_id] = {
+                'count': count,
+                'selected': selected
+            }
+
+            # # 把字典转换成bytes类型
+            # cart_bytes = pickle.dumps(cart_dict)
+            #
+            # # 把bytes类型转换成bytes类型的字符串
+            # cart_str_bytes = base64.b64encode(cart_bytes)
+            #
+            # # 把bytes类型的字符串转换成字符串
+            # cart_str = cart_str_bytes.decode()
+
+            # 使用相同的变量名 作用:
+            # 1.减少变量名
+            # 2.没有变量取引用数据,就会被垃圾回收机制回收,减少内存占用
+
+            cart_str = base64.b64encode(pickle.dumps(cart_dict)).decode()
+
+            # 创建响应对象
+            response = Response(serializer.data)
+
+            # 设置cookie
+            response.set_cookie('cart', cart_str)
+
+            return response
+
 
     def delete(self,request):
         '''删除'''

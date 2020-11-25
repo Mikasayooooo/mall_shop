@@ -5,7 +5,7 @@ from goods.models import SKU
 
 
 class CartSerializer(serializers.Serializer):
-    '''购物车序列化器'''
+    '''购物车新增和修改序列化器'''
 
     sku_id = serializers.IntegerField(label='商品id',min_value=1)
     count = serializers.IntegerField(label='购买数据')
