@@ -202,7 +202,6 @@ class CartView(APIView):
         return Response(serializer.data)
 
 
-
     def put(self,request):
         '''修改'''
 
@@ -331,15 +330,11 @@ class CartView(APIView):
             # 创建管道对象
             pl = redis_conn.pipeline()
 
-            # 覆盖sku_id 对应的count
-            pl.hset('cart_%d' % user.id, sku_id, count)
+            # 删除hash数据
+            pl.hdel('cart_%d' % user.id, sku_id)  # 不存在不会报错
 
-            # 如果勾选,就把勾选的商品sku_id存储到set集合中
-            if selected:
-                pl.sadd('selected_%d' % user.id, sku_id)
-            else:
-                # 如果未勾选,就把未勾选的商品sku_id从set集合中移除
-                pl.srem('selected_%d' % user.id, sku_id)
+            # 删除set数据
+            pl.srem('selected_%d' % user.id, sku_id)  # 不存在不会报错
 
             # 执行管道
             pl.execute()
