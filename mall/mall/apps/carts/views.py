@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from rest_framework.views import APIView
+from rest_framework.response import Response
 
 
 
@@ -13,7 +14,13 @@ class CartView(APIView):
 
     def post(self,request):
         '''新增'''
-        pass
+
+        try:
+            # 执行此代码时会执行认证逻辑,如果登录用户认证成功没有异常,但是未登录用户认证会报异常
+            user = request.user
+        except:
+            user = None
+
 
     def get(self,request):
         '''查询'''
