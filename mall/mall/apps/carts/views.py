@@ -6,7 +6,8 @@ from rest_framework import status
 from django_redis import get_redis_connection
 
 
-from .serializers import CartSerializer
+from .serializers import CartSerializer,SKUCartSerializer
+from goods.models import SKU
 
 
 
@@ -184,10 +185,21 @@ class CartView(APIView):
                 return Response({'message':'没有购物车数据'},status=status.HTTP_400_BAD_REQUEST)
 
         #根据sku_id 查询sku模型
+        sku_ids = cart_dict.keys()
+
+        # 直接查询出所有的sku模型返回查询集
+        skus = SKU.objects.filter(id__in=sku_ids)
+
         #给每个sku模型多定义一个count和selected属性
+        for sku in skus:
+            sku.count = cart_dict[sku.id]['count']
+            sku.selected = cart_dict[sku.id]['selected']
+
         # 创建序列化器进行序列化
+        serializer = SKUCartSerializer(instance=skus,many=True)
+
         # 响应
-        pass
+        return Response(serializer.data)
 
 
 
