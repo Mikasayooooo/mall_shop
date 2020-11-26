@@ -65,7 +65,7 @@ class OrderSettlementView(APIView):
 
 class CommitOrderView(CreateAPIView):
     '''保存订单'''
-    
+
     serializer_class = CommitOrderSerializer
 
     # 指定权限
