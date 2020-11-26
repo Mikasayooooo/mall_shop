@@ -1,4 +1,6 @@
+from django.utils.datetime_safe import datetime
 from rest_framework import serializers
+from decimal import Decimal
 
 
 from goods.models import SKU
@@ -49,7 +51,37 @@ class CommitOrderSerializer(serializers.ModelSerializer):
         '''保存订单'''
 
         # 获取当前保存订单时需要的信息
+
+        # 获取用户对象
+        user = self.context['request'].user  # 必须继承genericAPIView或者是它的子类
+
+        # 订单编号: 拿当前时间 + 00001  : 20190414154600 + 000000001
+        # 生成订单编号
+        # 时间必须是服务器的时间,格式化 %Y%m%d%h%M%S ,yms大写,%s是字符串, 09%d ,向左补齐至9位
+        order_id = datetime.now().strftime('%Y%m%d%h%M%S') + '09%d' % user.id
+
+        # 获取前端传入的收货地址
+        address = validated_data.get('address')
+
+        # 获取前端传入的支付方式
+        pay_method = validated_data.get('pay_method')
+
+        # 订单状态
+        status = (OrderInfo.ORDER_STATUS_ENUM['UNPAID'] if pay_method ==
+        OrderInfo.PAY_METHODS_ENUM['ALIPAY'] else OrderInfo.ORDER_STATUS_ENUM['UNSEND'])
+
         # 保存订单基本信息 OrderInfo(一)
+        orderInfo = OrderInfo.objects.create(
+            order_id = order_id,
+            user = user,
+            address = address,
+            total_count = 0,   # 订单中商品总数量
+            total_amount = Decimal('0.00'),  # 订单总金额
+            freight = Decimal('10.00'),
+            pay_method = pay_method,
+            status = status
+        )
+
         # 从redis读取购物车中被勾选的商品信息
         # 遍历购物车中被勾选的商品信息
             #获取sku对象
