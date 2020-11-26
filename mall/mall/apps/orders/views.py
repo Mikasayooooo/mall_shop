@@ -4,10 +4,11 @@ from django_redis import get_redis_connection
 from rest_framework.permissions import IsAuthenticated
 from decimal import Decimal
 from rest_framework.response import Response
+from rest_framework.generics import CreateAPIView
 
 
 from goods.models import SKU
-from .serializers import OrderSettlementSerializer
+from .serializers import OrderSettlementSerializer,CommitOrderSerializer
 
 
 # 不需要指定查询集,使用APIView即可
@@ -58,3 +59,14 @@ class OrderSettlementView(APIView):
         serializer = OrderSettlementSerializer(instance=data_dict)
 
         return Response(serializer.data)
+
+
+
+
+class CommitOrderView(CreateAPIView):
+    '''保存订单'''
+    
+    serializer_class = CommitOrderSerializer
+
+    # 指定权限
+    permission_classes = [IsAuthenticated]
