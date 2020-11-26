@@ -6,7 +6,7 @@ from rest_framework import status
 from django_redis import get_redis_connection
 
 
-from .serializers import CartSerializer,SKUCartSerializer,CartDeletedSerializer
+from .serializers import CartSerializer,SKUCartSerializer,CartDeletedSerializer,CartSelectedAllSerializer
 from goods.models import SKU
 
 
@@ -380,4 +380,58 @@ class CartView(APIView):
 class CartSelectedAllView(APIView):
     '''购物车全选'''
 
-    pass
+    def perform_authentication(self, request):
+        '''重写此方法延后认证'''
+        pass
+
+    def put(self,request):
+        '''购物车全选'''
+
+        try:
+            user = request.user
+        except:
+            user = None
+
+        # 创建序列化器
+        serializer = CartSelectedAllSerializer(data=request.data)
+
+        # 校验
+        serializer.is_valid(raise_exception=True)
+
+        # 获取校验后的数据
+        selected = serializer.validated_data.get('selected')
+
+        # 响应
+        response = Response(serializer.data)
+
+        if user and user.is_authenticated:
+            '''登录用户修改redis购物车数据'''
+        else:
+            '''非登录用户修改cookie购物车数据'''
+
+            # 先获取cookie数据
+            cart_str = request.COOKIES.get('cart')
+
+            # 判断cookie中购物车数据是否有值
+            if cart_str:
+                # 把字符串转换成字典
+                cart_dict = pickle.loads(base64.b64decode(cart_str.encode()))
+
+            # 如果cookie中没有取出购物车数据
+            else:
+                return Response({'message':'cookie中 没有购物车数据'},status=status.HTTP_400_BAD_REQUEST)
+                # 提前响应
+
+            # 遍历cookie大字典,根据前端传过来的selected来修改商品的选中状态
+            for sku_id in cart_dict:
+                cart_dict[sku_id]['selected'] = selected
+
+            # 再将字典转换成字符串
+            cart_str = base64.b64encode(pickle.dumps(cart_dict)).decode()
+
+            # 设置cookie
+            response.set_cookie('cart',cart_str)
+
+        # 响应
+        return response
+
