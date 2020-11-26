@@ -12,7 +12,8 @@ urlpatterns = [
     # 判断手机号是否已经注册
     url(r'^mobiles/(?P<mobile>1[3-9]\d{9})/count/$', views.MobileCountView.as_view()),
     # JWT登录
-    url(r'^authorizations/$', obtain_jwt_token),   # 内部认证代码还是django ,登录成功生成token
+    # url(r'^authorizations/$', obtain_jwt_token),   # 内部认证代码还是django ,登录成功生成token
+    url(r'^authorizations/$', views.UserAuthorizeView.as_view()),   # 内部认证代码还是django ,登录成功生成token
     #     obtain_jwt_token = ObtainJSONWebToken.as_view()
     # 获取用户详情
     url(r'^user/$', views.UserDetailView.as_view()),
