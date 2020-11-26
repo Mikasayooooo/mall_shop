@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     'areas.apps.AreasConfig',  # 省市区模块
     'goods.apps.GoodsConfig',  # 商品模块
     'contents.apps.ContentsConfig',  # 广告模块
+    'orders.apps.OrdersConfig',  # 订单模块
 ]
 
 # 通过这种方法
