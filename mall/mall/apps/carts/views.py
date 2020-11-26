@@ -373,3 +373,11 @@ class CartView(APIView):
                 response.delete_cookie('cart')
 
         return response
+
+
+
+
+class CartSelectedAllView(APIView):
+    '''购物车全选'''
+
+    pass
