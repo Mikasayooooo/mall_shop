@@ -5,14 +5,14 @@ from rest_framework.response import Response
 from rest_framework import status
 # 导入dev配置文件
 from django.conf import settings   # settings 代表 dev文件对象
-
-
-
 from rest_framework_jwt.settings import api_settings
+import logging
+
+
 from oauth.models import OAuthQQUser
 from oauth.serializers import QQAuthUserSerializer
 from oauth.utils import generate_save_user_token
-import logging
+from carts.utils import merge_cart_cookie_to_redis
 
 
 logger = logging.getLogger('django')
@@ -47,9 +47,9 @@ class QQauthURLView(APIView):
 class QQAuthUserView(APIView):
     '''QQ登录 成功后的回调处理'''
 
-    def get(self,requset):
+    def get(self,request):
         # 1.获取前端传入的code
-        code = requset.query_params.get('code')
+        code = request.query_params.get('code')
         if not code:
             return Response({'message':'缺少code'},status=status.HTTP_400_BAD_REQUEST)
 
@@ -90,11 +90,18 @@ class QQAuthUserView(APIView):
             payload = jwt_payload_handler(user)  # 根据user生成用户相关的载荷
             token = jwt_encode_handler(payload)  # 传入载荷生成完整的jwt
 
-            return Response({
+            # 响应对象
+            response = Response({
                 'token':token,
                 'username':user.username,
                 'user_id':user.user_id
             })
+
+            # 调用合并购物车函数
+            # response是个对象，对象是一个可变类型，对它进行改变，它原本就发生了变化，不需要再进行返回
+            merge_cart_cookie_to_redis(request,user,response)
+
+            return response
 
 
     def post(self,request):
@@ -116,9 +123,16 @@ class QQAuthUserView(APIView):
         payload = jwt_payload_handler(user)  # 根据user生成用户相关的载荷
         token = jwt_encode_handler(payload)  # 传入载荷生成完整的jwt
 
-        # 5.响应
-        return Response({
+        # 响应对象
+        response = Response({
             'token': token,
             'username': user.username,
             'user_id': user.user_id
         })
+
+        # 调用合并购物车函数
+        # response是个对象，对象是一个可变类型，对它进行改变，它原本就发生了变化，不需要再进行返回
+        merge_cart_cookie_to_redis(request, user, response)
+
+        # 5.响应
+        return response
