@@ -52,8 +52,8 @@ class CommitOrderSerializer(serializers.ModelSerializer):
 
         # 订单编号: 拿当前时间 + 00001  : 20190414154600 + 000000001
         # 生成订单编号
-        # 时间必须是服务器的时间,格式化 %Y%m%d%h%M%S ,yms大写,%s是字符串, 09%d ,向左补齐至9位
-        order_id = datetime.now().strftime('%Y%m%d%h%M%S') + '09%d' % user.id
+        # 时间必须是服务器的时间,格式化 %Y%m%d%h%M%S ,yhms大写,%s是字符串, 09%d ,向左补齐至9位
+        order_id = datetime.now().strftime('%Y%m%d%H%M%S') + '09%d' % user.id
 
         # 获取前端传入的收货地址
         address = validated_data.get('address')
