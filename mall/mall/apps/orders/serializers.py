@@ -1,6 +1,7 @@
 from django.utils.datetime_safe import datetime
 from rest_framework import serializers
 from decimal import Decimal
+from django_redis import get_redis_connection
 
 
 from goods.models import SKU
@@ -83,11 +84,46 @@ class CommitOrderSerializer(serializers.ModelSerializer):
         )
 
         # 从redis读取购物车中被勾选的商品信息
+
+        # 创建redis连接对象
+        redis_conn = get_redis_connection('cart')
+
+        # 把redis中hash和set的购物车数据全部取出来 {sku_id_1:2}
+        cart_dict_redis = redis_conn.hgetall('cart_%d' % user.id)
+        selected_ids = redis_conn.smembers('selected_%d' % user.id)
+
+        # SKU.objects.filter(id__in=selected_ids)
+        # 查询集具有惰性查询和缓存的特点,多个用户同时抢购同一个商品,会出现问题
+
         # 遍历购物车中被勾选的商品信息
-            #获取sku对象
+        for sku_id_bytes in selected_ids:
+            #获取sku对象(一个一个获取)
+            sku = SKU.objects.get(id=sku_id_bytes)  # 这里不需要将bytes->int,自动会转
+
+            # 获取当前商品的购买数量
+            buy_count = int(cart_dict_redis[sku_id_bytes])  # 注意转成int
+
+            # 把当前sku模型中的库存和销量都分别先获取出来
+            origin_sales = sku.sales  # 获取当前要购买商品的原有销量
+            origin_stock = sku.stock  # 获取当前要购买商品的原有库存
+
             # 判断库存
+            if buy_count > origin_stock:
+                raise serializers.ValidationError('库存不足')
+
             # 减少库存，增加销量 SKU
-            # 修改SKU销量
+            # 计算新的库存和销量
+            new_sales = origin_sales + buy_count
+            new_stock = origin_stock - buy_count
+            sku.sales = new_sales  # 修改sku模型的销量
+            sku.stock = new_stock  # 修改sku模型的库存
+            sku.save()  # 记得保存
+
+            # 修改SPU销量
+            spu = sku.goods
+            spu.sales = spu.sales + new_sales
+            spu.save()
+
             # 保存订单商品信息 OrderGood(多)
             # 累加计算总数量和总价
         # 最后加入邮费和保存订单信息
