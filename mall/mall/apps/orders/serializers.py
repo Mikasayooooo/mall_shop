@@ -165,7 +165,6 @@ class CommitOrderSerializer(serializers.ModelSerializer):
                 orderInfo.total_amount += orderInfo.freight  # 邮费只加一次
                 orderInfo.save()
 
-                # 清除购物车中已结算的商品
             except Exception:
                 # 进行暴力回滚
                 transaction.savepoint_rollback(save_point)
@@ -174,6 +173,12 @@ class CommitOrderSerializer(serializers.ModelSerializer):
             else:
                 # 如果中间没有出现任何问题,就提交事务
                 transaction.savepoint_commit(save_point)
+
+        # 清除购物车中已结算的商品
+        pl = redis_conn.pipeline()
+        pl.hdel('cart_%d' % user.id,*selected_ids)  # 删除多个指定的购物车商品
+        pl.srem('selected_%d' % user.id,*selected_ids) # 删除多个指定的购物车商品
+        pl.execute()
 
         # 返回订单模型对象
         return orderInfo  # 只序列化 order_id
