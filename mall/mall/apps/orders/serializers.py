@@ -2,6 +2,8 @@ from django.utils.datetime_safe import datetime
 from rest_framework import serializers
 from decimal import Decimal
 from django_redis import get_redis_connection
+from django.db import transaction
+
 
 from goods.models import SKU
 from .models import OrderInfo, OrderGoods
@@ -43,6 +45,8 @@ class CommitOrderSerializer(serializers.ModelSerializer):
         }
 
     def create(self, validated_data):
+        '''在这里,我们同时操作了四张表,订单基本信息表,sku表,spu表,订单中商品表,
+        四张表要么一起修改成功,要么都不修改'''
         '''保存订单'''
 
         # 获取当前保存订单时需要的信息
@@ -66,76 +70,91 @@ class CommitOrderSerializer(serializers.ModelSerializer):
                                                            OrderInfo.PAY_METHODS_ENUM['ALIPAY'] else
                   OrderInfo.ORDER_STATUS_ENUM['UNSEND'])
 
-        # 保存订单基本信息 OrderInfo(一)
-        orderInfo = OrderInfo.objects.create(
-            order_id=order_id,
-            user=user,
-            address=address,
-            total_count=0,  # 订单中商品总数量
-            total_amount=Decimal('0.00'),  # 订单总金额
-            freight=Decimal('10.00'),
-            pay_method=pay_method,
-            status=status
-        )
+        # 手动开启事务
+        with transaction.atomic():
 
-        # 从redis读取购物车中被勾选的商品信息
+            # 创建事务的保存点
+            save_point = transaction.savepoint()
 
-        # 创建redis连接对象
-        redis_conn = get_redis_connection('cart')
+            try:
+                # 保存订单基本信息 OrderInfo(一)
+                orderInfo = OrderInfo.objects.create(
+                    order_id=order_id,
+                    user=user,
+                    address=address,
+                    total_count=0,  # 订单中商品总数量
+                    total_amount=Decimal('0.00'),  # 订单总金额
+                    freight=Decimal('10.00'),
+                    pay_method=pay_method,
+                    status=status
+                )
 
-        # 把redis中hash和set的购物车数据全部取出来 {sku_id_1:2}
-        cart_dict_redis = redis_conn.hgetall('cart_%d' % user.id)
-        selected_ids = redis_conn.smembers('selected_%d' % user.id)
+                # 从redis读取购物车中被勾选的商品信息
 
-        # SKU.objects.filter(id__in=selected_ids)
-        # 查询集具有惰性查询和缓存的特点,多个用户同时抢购同一个商品,会出现资源抢夺问题
+                # 创建redis连接对象
+                redis_conn = get_redis_connection('cart')
 
-        # 遍历购物车中被勾选的商品信息
-        for sku_id_bytes in selected_ids:
-            # 获取sku对象(一个一个获取)
-            sku = SKU.objects.get(id=sku_id_bytes)  # 这里不需要将bytes->int,自动会转
+                # 把redis中hash和set的购物车数据全部取出来 {sku_id_1:2}
+                cart_dict_redis = redis_conn.hgetall('cart_%d' % user.id)
+                selected_ids = redis_conn.smembers('selected_%d' % user.id)
 
-            # 获取当前商品的购买数量
-            buy_count = int(cart_dict_redis[sku_id_bytes])  # 注意转成int
+                # SKU.objects.filter(id__in=selected_ids)
+                # 查询集具有惰性查询和缓存的特点,多个用户同时抢购同一个商品,会出现资源抢夺问题
 
-            # 把当前sku模型中的库存和销量都分别先获取出来
-            origin_sales = sku.sales  # 获取当前要购买商品的原有销量
-            origin_stock = sku.stock  # 获取当前要购买商品的原有库存
+                # 遍历购物车中被勾选的商品信息
+                for sku_id_bytes in selected_ids:
+                    # 获取sku对象(一个一个获取)
+                    sku = SKU.objects.get(id=sku_id_bytes)  # 这里不需要将bytes->int,自动会转
 
-            # 判断库存
-            if buy_count > origin_stock:
+                    # 获取当前商品的购买数量
+                    buy_count = int(cart_dict_redis[sku_id_bytes])  # 注意转成int
+
+                    # 把当前sku模型中的库存和销量都分别先获取出来
+                    origin_sales = sku.sales  # 获取当前要购买商品的原有销量
+                    origin_stock = sku.stock  # 获取当前要购买商品的原有库存
+
+                    # 判断库存
+                    if buy_count > origin_stock:
+                        raise serializers.ValidationError('库存不足')
+
+                    # 减少库存，增加销量 SKU
+                    # 计算新的库存和销量
+                    new_sales = origin_sales + buy_count
+                    new_stock = origin_stock - buy_count
+                    sku.sales = new_sales  # 修改sku模型的销量
+                    sku.stock = new_stock  # 修改sku模型的库存
+                    sku.save()  # 记得保存
+
+                    # 修改SPU销量
+                    spu = sku.goods
+                    spu.sales = spu.sales + buy_count  # 原有销量+购买数量=现在的销量
+                    spu.save()
+
+                    # 保存订单商品信息 OrderGood(多)
+                    OrderGoods.objects.create(
+                        order=orderInfo,
+                        sku=sku,
+                        count=buy_count,
+                        price=sku.price
+                    )
+
+                    # 累加计算总数量和总价
+                    orderInfo.total_count += buy_count
+                    orderInfo.total_amount += (sku.price * buy_count)  # 括号括起来
+
+                # 最后加入邮费和保存订单信息
+                orderInfo.total_amount += orderInfo.freight  # 邮费只加一次
+                orderInfo.save()
+
+                # 清除购物车中已结算的商品
+            except Exception:
+                # 进行暴力回滚
+                transaction.savepoint_rollback(save_point)
+                # 此行代码不能少,不然订单提交失败,前端界面依然正常
                 raise serializers.ValidationError('库存不足')
-
-            # 减少库存，增加销量 SKU
-            # 计算新的库存和销量
-            new_sales = origin_sales + buy_count
-            new_stock = origin_stock - buy_count
-            sku.sales = new_sales  # 修改sku模型的销量
-            sku.stock = new_stock  # 修改sku模型的库存
-            sku.save()  # 记得保存
-
-            # 修改SPU销量
-            spu = sku.goods
-            spu.sales = spu.sales + buy_count  # 原有销量+购买数量=现在的销量
-            spu.save()
-
-            # 保存订单商品信息 OrderGood(多)
-            OrderGoods.objects.create(
-                order=orderInfo,
-                sku=sku,
-                count=buy_count,
-                price=sku.price
-            )
-
-            # 累加计算总数量和总价
-            orderInfo.total_count += buy_count
-            orderInfo.total_amount += (sku.price * buy_count) # 括号括起来
-
-        # 最后加入邮费和保存订单信息
-        orderInfo.total_amount += orderInfo.freight  # 邮费只加一次
-        orderInfo.save()
-
-        # 清除购物车中已结算的商品
+            else:
+                # 如果中间没有出现任何问题,就提交事务
+                transaction.savepoint_commit(save_point)
 
         # 返回订单模型对象
         return orderInfo  # 只序列化 order_id
