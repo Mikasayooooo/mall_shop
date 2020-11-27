@@ -103,44 +103,63 @@ class CommitOrderSerializer(serializers.ModelSerializer):
 
                 # 遍历购物车中被勾选的商品信息
                 for sku_id_bytes in selected_ids:
-                    # 获取sku对象(一个一个获取)
-                    sku = SKU.objects.get(id=sku_id_bytes)  # 这里不需要将bytes->int,自动会转
 
-                    # 获取当前商品的购买数量
-                    buy_count = int(cart_dict_redis[sku_id_bytes])  # 注意转成int
+                    # 让用户对同一个商品有无限次下单机会,直到库存真的不足为止
+                    while True:
+                        # 获取sku对象(一个一个获取)
+                        sku = SKU.objects.get(id=sku_id_bytes)  # 这里不需要将bytes->int,自动会转
 
-                    # 把当前sku模型中的库存和销量都分别先获取出来
-                    origin_sales = sku.sales  # 获取当前要购买商品的原有销量
-                    origin_stock = sku.stock  # 获取当前要购买商品的原有库存
+                        # 获取当前商品的购买数量
+                        buy_count = int(cart_dict_redis[sku_id_bytes])  # 注意转成int
 
-                    # 判断库存
-                    if buy_count > origin_stock:
-                        raise serializers.ValidationError('库存不足')
+                        # 把当前sku模型中的库存和销量都分别先获取出来
+                        origin_sales = sku.sales  # 获取当前要购买商品的原有销量
+                        origin_stock = sku.stock  # 获取当前要购买商品的原有库存
 
-                    # 减少库存，增加销量 SKU
-                    # 计算新的库存和销量
-                    new_sales = origin_sales + buy_count
-                    new_stock = origin_stock - buy_count
-                    sku.sales = new_sales  # 修改sku模型的销量
-                    sku.stock = new_stock  # 修改sku模型的库存
-                    sku.save()  # 记得保存
+                        # 判断库存
+                        if buy_count > origin_stock:
+                            raise serializers.ValidationError('库存不足')
 
-                    # 修改SPU销量
-                    spu = sku.goods
-                    spu.sales = spu.sales + buy_count  # 原有销量+购买数量=现在的销量
-                    spu.save()
+                        # 减少库存，增加销量 SKU
+                        # 计算新的库存和销量
+                        new_sales = origin_sales + buy_count
+                        new_stock = origin_stock - buy_count
+                        # sku.sales = new_sales  # 修改sku模型的销量
+                        # sku.stock = new_stock  # 修改sku模型的库存
+                        # sku.save()  # 记得保存
 
-                    # 保存订单商品信息 OrderGood(多)
-                    OrderGoods.objects.create(
-                        order=orderInfo,
-                        sku=sku,
-                        count=buy_count,
-                        price=sku.price
-                    )
 
-                    # 累加计算总数量和总价
-                    orderInfo.total_count += buy_count
-                    orderInfo.total_amount += (sku.price * buy_count)  # 括号括起来
+                        '''使用乐观锁解决 资源抢夺问题'''
+                        # update更新时会返回 更新数据的条数 0,1
+                        result = SKU.objects.filter(stock=origin_stock,id=sku_id_bytes).update(stock=new_stock,sales=new_sales)
+                        # 如果没有修改成功,说明有抢夺
+                        if result == 0:
+                            # 这里有一个问题,如果库存充足,第一个人下单成功,第二个人下单查询原来库存,发现查询不到,
+                            # 直接报错,但是库存还有,导致第二个人无法下单,所以要给用户多几次机会下单
+                            # 所以这里 不能直接报错,会走 except后面的代码
+                            # raise serializers.ValidationError('资源抢夺')
+                            continue
+
+
+                        # 修改SPU销量
+                        spu = sku.goods
+                        spu.sales = spu.sales + buy_count  # 原有销量+购买数量=现在的销量
+                        spu.save()
+
+                        # 保存订单商品信息 OrderGood(多)
+                        OrderGoods.objects.create(
+                            order=orderInfo,
+                            sku=sku,
+                            count=buy_count,
+                            price=sku.price
+                        )
+
+                        # 累加计算总数量和总价
+                        orderInfo.total_count += buy_count
+                        orderInfo.total_amount += (sku.price * buy_count)  # 括号括起来
+
+                        # 当前商品下单成功,跳出死循环,进行对下一个商品下单
+                        break
 
                 # 最后加入邮费和保存订单信息
                 orderInfo.total_amount += orderInfo.freight  # 邮费只加一次
