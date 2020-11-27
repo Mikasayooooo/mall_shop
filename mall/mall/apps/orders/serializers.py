@@ -3,10 +3,8 @@ from rest_framework import serializers
 from decimal import Decimal
 from django_redis import get_redis_connection
 
-
 from goods.models import SKU
-from .models import OrderInfo,OrderGoods
-
+from .models import OrderInfo, OrderGoods
 
 
 class CartSKUSerializer(serializers.ModelSerializer):
@@ -16,17 +14,14 @@ class CartSKUSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SKU
-        fields = ['id','name','default_image_url','price','count']
-
+        fields = ['id', 'name', 'default_image_url', 'price', 'count']
 
 
 class OrderSettlementSerializer(serializers.Serializer):
     '''订单序列化器'''
 
     skus = CartSKUSerializer(many=True)
-    freight = serializers.DecimalField(label='运费',max_digits=10,decimal_places=2)
-
-
+    freight = serializers.DecimalField(label='运费', max_digits=10, decimal_places=2)
 
 
 class CommitOrderSerializer(serializers.ModelSerializer):
@@ -37,16 +32,15 @@ class CommitOrderSerializer(serializers.ModelSerializer):
         # 'address','pay_method' 这两个字段 只做反序列化的输入
         # order_id 只做序列化输出
         # 它们默认都是双向的
-        fields = ['address','pay_method','order_id']
+        fields = ['address', 'pay_method', 'order_id']
 
         # 只序列化输出，不做反序列化
         read_only_fields = ['order_id']
 
         extra_kwargs = {
-            'address':{'write_only':True},
-            'pay_method':{'write_only':True}
+            'address': {'write_only': True},
+            'pay_method': {'write_only': True}
         }
-
 
     def create(self, validated_data):
         '''保存订单'''
@@ -69,18 +63,19 @@ class CommitOrderSerializer(serializers.ModelSerializer):
 
         # 订单状态
         status = (OrderInfo.ORDER_STATUS_ENUM['UNPAID'] if pay_method ==
-        OrderInfo.PAY_METHODS_ENUM['ALIPAY'] else OrderInfo.ORDER_STATUS_ENUM['UNSEND'])
+                                                           OrderInfo.PAY_METHODS_ENUM['ALIPAY'] else
+                  OrderInfo.ORDER_STATUS_ENUM['UNSEND'])
 
         # 保存订单基本信息 OrderInfo(一)
         orderInfo = OrderInfo.objects.create(
-            order_id = order_id,
-            user = user,
-            address = address,
-            total_count = 0,   # 订单中商品总数量
-            total_amount = Decimal('0.00'),  # 订单总金额
-            freight = Decimal('10.00'),
-            pay_method = pay_method,
-            status = status
+            order_id=order_id,
+            user=user,
+            address=address,
+            total_count=0,  # 订单中商品总数量
+            total_amount=Decimal('0.00'),  # 订单总金额
+            freight=Decimal('10.00'),
+            pay_method=pay_method,
+            status=status
         )
 
         # 从redis读取购物车中被勾选的商品信息
@@ -93,11 +88,11 @@ class CommitOrderSerializer(serializers.ModelSerializer):
         selected_ids = redis_conn.smembers('selected_%d' % user.id)
 
         # SKU.objects.filter(id__in=selected_ids)
-        # 查询集具有惰性查询和缓存的特点,多个用户同时抢购同一个商品,会出现问题
+        # 查询集具有惰性查询和缓存的特点,多个用户同时抢购同一个商品,会出现资源抢夺问题
 
         # 遍历购物车中被勾选的商品信息
         for sku_id_bytes in selected_ids:
-            #获取sku对象(一个一个获取)
+            # 获取sku对象(一个一个获取)
             sku = SKU.objects.get(id=sku_id_bytes)  # 这里不需要将bytes->int,自动会转
 
             # 获取当前商品的购买数量
@@ -121,12 +116,26 @@ class CommitOrderSerializer(serializers.ModelSerializer):
 
             # 修改SPU销量
             spu = sku.goods
-            spu.sales = spu.sales + new_sales
+            spu.sales = spu.sales + buy_count  # 原有销量+购买数量=现在的销量
             spu.save()
 
             # 保存订单商品信息 OrderGood(多)
+            OrderGoods.objects.create(
+                order=orderInfo,
+                sku=sku,
+                count=buy_count,
+                price=sku.price
+            )
+
             # 累加计算总数量和总价
+            orderInfo.total_count += buy_count
+            orderInfo.total_amount += (sku.price * buy_count) # 括号括起来
+
         # 最后加入邮费和保存订单信息
+        orderInfo.total_amount += orderInfo.freight  # 邮费只加一次
+        orderInfo.save()
+
         # 清除购物车中已结算的商品
 
-        pass
+        # 返回订单模型对象
+        return orderInfo  # 只序列化 order_id
