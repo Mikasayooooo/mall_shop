@@ -65,3 +65,24 @@ class PaymentView(APIView):
 
         # 响应
         return Response({'alipay_url':alipay_url})
+
+
+
+
+class PaymentStatusView(APIView):
+    '''修改订单状态,保存支付宝交易号'''
+
+    def put(self,request):
+
+        # 获取前端以查询字符串方式传入的数据
+        queryDict = request.query_params
+
+        # 将queryDict类型转成字典(要将中间的sign从里面移除,然后进行验证)
+        # 要将中间的sign从里面移除
+        # 创建alipay支付宝对象
+        # 调用alipay SDK的 verify 方法进行验证支付结果是否是支付宝传回来的
+        # 取出mall商城订单编号,再取出支付宝交易号
+        # 把两个编号绑定到一起存储到mysql
+        # 修改支付成功后的订单状态
+        # 把支付宝交易响应回给前端
+        pass
