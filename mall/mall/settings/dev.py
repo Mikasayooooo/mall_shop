@@ -66,6 +66,11 @@ INSTALLED_APPS = [
     'ckeditor',  # 富文本编辑器
     'ckeditor_uploader',  # 富文本编辑器上传图片模块
     'django_crontab', # 定时任务
+    # 下面三个都是xadmin的扩展
+    'xadmin',
+    'crispy_forms',
+    'reversion',
+    'haystack',  # 搜索模块
 
     'users.apps.UsersConfig',  # 用户模块
     'oauth.apps.OauthConfig',  # QQ模块
@@ -75,10 +80,6 @@ INSTALLED_APPS = [
     'orders.apps.OrdersConfig',  # 订单模块
     'payment.apps.PaymentConfig',  # 支付模块
 
-    # 下面三个都是xadmin的扩展
-    'xadmin',
-    'crispy_forms',
-    'reversion',
 ]
 
 # 通过这种方法
@@ -394,3 +395,19 @@ ALIPAY_URL = 'https://openapi.alipaydev.com/gateway.do'
 # ALIPAY_APPID = 真实APPID
 # ALIPAY_DEBUG = False
 # ALIPAY_URL = 'https://openapi.alipay.com/gateway.do'
+
+
+
+
+# Haystack
+HAYSTACK_CONNECTIONS = {
+ 'default': {
+ 'ENGINE': 'haystack.backends.elasticsearch_backend.ElasticsearchSearchEngine',
+ 'URL': 'http://192.168.36.130:9200/', # 此处为elasticsearch运⾏的服务器ip地址，端⼝号固定为9200
+ 'INDEX_NAME': 'mall_shop', # 指定elasticsearch建⽴的索引库的名称
+ },
+}
+
+
+# 当添加、修改、删除数据时，⾃动⽣成索引
+HAYSTACK_SIGNAL_PROCESSOR = 'haystack.signals.RealtimeSignalProcessor'

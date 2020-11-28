@@ -1,10 +1,11 @@
 from django.shortcuts import render
+from drf_haystack.viewsets import HaystackViewSet
 from rest_framework.filters import OrderingFilter
 from rest_framework.generics import ListAPIView
 
 
 from .models import SKU
-from .serializers import SKUSerializer
+from .serializers import SKUSerializer,SKUSearchSerializer
 from mall.utils.pagination import StandardResultsSetPagination
 
 
@@ -36,4 +37,15 @@ class SKUListView(ListAPIView):
         print('self---------------->',self)
         category_id = self.kwargs.get('category_id')
         return SKU.objects.filter(is_launched=True,category_id=category_id)
+
+
+
+
+
+class SKUSearchViewSet(HaystackViewSet):
+    """
+    SKU搜索
+    """
+    index_models = [SKU]  # 指定查询集
+    serializer_class = SKUSearchSerializer  # 指定序列化器
 
