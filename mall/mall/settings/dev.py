@@ -74,6 +74,11 @@ INSTALLED_APPS = [
     'contents.apps.ContentsConfig',  # 广告模块
     'orders.apps.OrdersConfig',  # 订单模块
     'payment.apps.PaymentConfig',  # 支付模块
+
+    # 下面三个都是xadmin的扩展
+    'xadmin',
+    'crispy_forms',
+    'reversion',
 ]
 
 # 通过这种方法
