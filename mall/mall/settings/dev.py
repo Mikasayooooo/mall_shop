@@ -292,14 +292,10 @@ AUTH_USER_MODEL = 'users.User'  # 应用名.模型名
 # CORS 追加⽩名单
 CORS_ORIGIN_WHITELIST = (
     '127.0.0.1:8080',
-    '127.0.0.1:41533',
     'localhost:8080',
-    'localhost:41533',
-    'www.mall.site:41533',
     'www.mall.site:8080',
-    'www.meiduo.site:41533',
     'www.meiduo.site:8080',
-    'api.mall.site:8000'
+    'api.mall.site:8000',
     'api.meiduo.site:8000'
 )
 

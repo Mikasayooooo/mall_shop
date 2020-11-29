@@ -9,11 +9,34 @@ https://docs.djangoproject.com/en/1.11/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.11/ref/settings/
 """
+import datetime
 
-import os
+import os, sys
+
+# os.path: 拼接路径
+# sys.path: 查询导包路径的
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+# 当前文件的名字的上一级目录的上一级目录
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+print('BASE_DIR---------------->', BASE_DIR)
+# /home/python/tools/pyProjects/djangoStudy/djangoProjects/mall_shop/mall/mall
+
+print('*' * 30)
+
+print(sys.path)
+# ['/home/python/tools/pyProjects/djangoStudy/djangoProjects/mall_shop/mall',......]
+# mall.apps.users.apps.UsersConfig
+
+sys.path.insert(0, os.path.join(BASE_DIR, 'apps'))
+#  追加系统的导包路径(目的：1.注册子应用时，可以写的方便点  2.修改django认证模型时，必须以应用名.模型名)
+
+print('*' * 30)
+
+print(sys.path)
+# ['/home/python/tools/pyProjects/djangoStudy/djangoProjects/mall_shop/mall/mall/apps',......]
+# users.apps.UsersConfig
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
@@ -22,9 +45,11 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '_r^c8pq*%blhb4x^tyx=vxz)^bulhi*eo=2wqm-)bg0z6!iu0l'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# DEBUG = True
+DEBUG = False  # 生产环境
 
-ALLOWED_HOSTS = []
+# 允许哪些域名访问django
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost','www.mall.site','api.mall.site','www.meiduo.site','api.meiduo.site']
 
 # Application definition
 
@@ -35,9 +60,35 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    # 第三方放中间,自己的放下边
+    'rest_framework',  # DRF
+    'corsheaders',
+    'ckeditor',  # 富文本编辑器
+    'ckeditor_uploader',  # 富文本编辑器上传图片模块
+    'django_crontab', # 定时任务
+    # 下面三个都是xadmin的扩展
+    'xadmin',
+    'crispy_forms',
+    'reversion',
+    'haystack',  # 搜索模块
+
+    'users.apps.UsersConfig',  # 用户模块
+    'oauth.apps.OauthConfig',  # QQ模块
+    'areas.apps.AreasConfig',  # 省市区模块
+    'goods.apps.GoodsConfig',  # 商品模块
+    'contents.apps.ContentsConfig',  # 广告模块
+    'orders.apps.OrdersConfig',  # 订单模块
+    'payment.apps.PaymentConfig',  # 支付模块
+
 ]
 
+# 通过这种方法
+# from corsheaders.middleware import CorsMiddleware
+
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',  # 最外层的中间件
+
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -52,7 +103,7 @@ ROOT_URLCONF = 'mall.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR,'templates')],  # 指定模板文件加载路径
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -71,10 +122,26 @@ WSGI_APPLICATION = 'mall.wsgi.application'
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    }
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.sqlite3',
+    #     'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+    # }
+    'default': {   # 主机:增删改
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'mall_shop',  # 数据库的名字
+        'USER': 'mall_shop',  # 数据库用户名
+        'PASSWORD': 'mysql',  # 数据库密码
+        'HOST': '192.168.36.130',   # 数据库主机
+        'PORT': 3306,  # 数据库端口
+    },
+    'slave': {  # 从机:查
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'mall_shop',  # 数据库的名字
+            'USER': 'root',  # 数据库用户名
+            'PASSWORD': 'mysql',  # 数据库密码
+            'HOST': '192.168.36.130',  # 数据库主机
+            'PORT': 3307,  # 数据库端口
+        },
 }
 
 # Password validation
@@ -98,9 +165,12 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/1.11/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+# LANGUAGE_CODE = 'en-us'
+# LANGUAGE_CODE = 'zh-Hans'  # 繁体中文
+LANGUAGE_CODE = 'zh-hans'  # 简体中文
 
-TIME_ZONE = 'UTC'
+# TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Shanghai'
 
 USE_I18N = True
 
@@ -112,3 +182,246 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.11/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# redis数据库配置
+CACHES = {
+    "default": {  # 缓存省市区数据
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/5",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    },
+    "session": {  # 缓存session
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/6",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    },
+    "verify_codes": {  # 存储验证码
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/7",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    },
+    "history": {  # 存储商品浏览记录
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/8",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    },
+    "cart": {  # 存储购物车记录
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/9",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+
+}
+
+# session配置
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "session"
+
+# 日志
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,  # 是否禁用已经存在的日志器
+    'formatters': {  # 日志信息显示的格式
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(module)s %(lineno)d %(message)s'
+        },
+        'simple': {
+            'format': '%(levelname)s %(module)s %(lineno)d %(message)s'
+        },
+    },
+    'filters': {  # 对日志进行过滤
+        'require_debug_true': {  # django在debug模式下才输出日志
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+    },
+    'handlers': {  # 日志处理方法
+        'console': {  # 向终端中输出日志
+            'level': 'INFO',
+            'filters': ['require_debug_true'],
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple'
+        },
+        'file': {  # 向文件中输出日志
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            # # 当前文件的名字的上一级目录的上一级目录的上一级目录
+            'filename': os.path.join(os.path.dirname(BASE_DIR), "logs/mall.log"),  # 日志文件的位置
+            'maxBytes': 300 * 1024 * 1024,
+            'backupCount': 10,
+            'formatter': 'verbose'
+        },
+    },
+    'loggers': {  # 日志器
+        'django': {  # 定义了一个名为django的日志器
+            'handlers': ['console', 'file'],  # 可以同时向终端与文件中输出日志
+            'propagate': True,  # 是否继续传递日志信息
+            'level': 'INFO',  # 日志器接收的最低日志级别
+        },
+    }
+}
+
+# DRF配置项
+REST_FRAMEWORK = {
+    # 异常处理
+    'EXCEPTION_HANDLER': 'mall.utils.exceptions.exception_handler',
+
+    # 认证
+     'DEFAULT_AUTHENTICATION_CLASSES': (
+         'rest_framework_jwt.authentication.JSONWebTokenAuthentication',  # JWT认证类,放在第一位默认项
+         'rest_framework.authentication.SessionAuthentication',
+         'rest_framework.authentication.BasicAuthentication',
+     ),
+
+    # 分页
+    'DEFAULT_PAGINATION_CLASS': 'mall.utils.pagination.StandardResultsSetPagination',
+}
+
+# 修改Django认证系统的用户模型类
+# mall.apps.users.models.User
+AUTH_USER_MODEL = 'users.User'  # 应用名.模型名
+
+# CORS 追加⽩名单
+CORS_ORIGIN_WHITELIST = (
+    '127.0.0.1:8080',
+    'localhost:8080',
+    'www.mall.site:8080',
+    'www.meiduo.site:8080',
+    'api.mall.site:8000',
+    'api.meiduo.site:8000',
+    'www.meiduo.site',
+)
+
+CORS_ALLOW_CREDENTIALS = True  # 允许跨域携带cookie
+
+
+# JWT
+JWT_AUTH = {
+ # JWT的有效期
+'JWT_EXPIRATION_DELTA': datetime.timedelta(days=1),
+
+# 修改JWT登录视图函数的构造响应数据的函数
+'JWT_RESPONSE_PAYLOAD_HANDLER': 'users.utils.jwt_response_payload_handler' # 修改成自己定义的,是为了实现返回token和其他值
+}
+
+
+# 修改默认的认证后端
+AUTHENTICATION_BACKENDS = [
+ 'users.utils.UsernameMobileAuthBackend',  # 修改成自己定义的,是为了实现多账户登录
+]
+
+
+# QQ登录参数
+QQ_CLIENT_ID = '101514053'
+QQ_CLIENT_SECRET = '1075e75648566262ea35afa688073012'
+QQ_REDIRECT_URI = 'http://www.meiduo.site:8080/oauth_callback.html'
+
+
+
+# 邮箱配置
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'  # 默认
+EMAIL_HOST = 'smtp.163.com'
+EMAIL_PORT = 25         # 默认
+# 发送邮件的邮箱
+EMAIL_HOST_USER = 'liuhaoli233@163.com'
+# 在邮箱中设置的客户端授权密码
+EMAIL_HOST_PASSWORD = 'lhl199710252015'
+# 收件⼈看到的发件⼈
+EMAIL_FROM = 'LHL<liuhaoli233@163.com>'
+
+
+
+# DRF扩展
+REST_FRAMEWORK_EXTENSIONS = {
+ # 缓存时间
+ 'DEFAULT_CACHE_RESPONSE_TIMEOUT': 60 * 60,
+ # 缓存存储
+ 'DEFAULT_USE_CACHE': 'default',
+}
+
+
+
+# FastDFS
+FDFS_BASE_URL = 'http://192.168.36.130:8888/'
+FDFS_CLIENT_CONF = os.path.join(BASE_DIR, 'utils/fastdfs/client.conf')
+
+
+
+# django⽂件存储
+DEFAULT_FILE_STORAGE = 'mall.utils.fastdfs.fdfs_storage.FastDFSStorage'
+
+
+
+# 富文本编辑器ckeditor配置
+CKEDITOR_CONFIGS = {
+    'default': {
+        'toolbar': 'full',  # 工具条功能
+        'height': 300,  # 编辑器高度
+        # 'width': 300,  # 编辑器宽
+    },
+}
+CKEDITOR_UPLOAD_PATH = ''  # 上传图片保存路径，使用了FastDFS，所以此处设为''
+
+
+
+
+# 静态化主⻚存储路径
+GENERATED_STATIC_HTML_FILES_DIR = os.path.join(os.path.dirname(os.path.dirname(BASE_DIR)), 'front_end_pc')
+
+
+
+# 定时任务
+CRONJOBS = [
+ # 每1分钟执⾏⼀次⽣成主⻚静态⽂件
+ #  分 时 日 月 周
+ ('*/1 * * * *', 'contents.crons.generate_static_index_html', '>> /home/python/tools/pyProjects/djangoStudy/djangoProjects/mall_shop/mall/logs/crontab.log')
+#   路径需要设置
+]
+
+
+# 解决crontab中⽂问题
+CRONTAB_COMMAND_PREFIX = 'LANG_ALL=zh_cn.UTF-8'
+
+
+
+# ⽀付宝(沙箱环境)
+ALIPAY_APPID = '2016110300789409'
+ALIPAY_DEBUG = True
+ALIPAY_URL = 'https://openapi.alipaydev.com/gateway.do'
+# ⽀付宝(真实环境)
+# ALIPAY_APPID = 真实APPID
+# ALIPAY_DEBUG = False
+# ALIPAY_URL = 'https://openapi.alipay.com/gateway.do'
+
+
+
+
+# Haystack
+HAYSTACK_CONNECTIONS = {
+ 'default': {
+ 'ENGINE': 'haystack.backends.elasticsearch_backend.ElasticsearchSearchEngine',
+ 'URL': 'http://192.168.36.130:9200/', # 此处为elasticsearch运⾏的服务器ip地址，端⼝号固定为9200
+ 'INDEX_NAME': 'mall_shop', # 指定elasticsearch建⽴的索引库的名称
+ },
+}
+
+
+# 当添加、修改、删除数据时，⾃动⽣成索引
+HAYSTACK_SIGNAL_PROCESSOR = 'haystack.signals.RealtimeSignalProcessor'
+
+
+# 配置读写分离
+DATABASE_ROUTERS = ['mall.utils.db_router.MasterSlaveDBRouter']
+
+
+# 配置静态⽂件收集之后存放的⽬录
+STATIC_ROOT = os.path.join(os.path.dirname(os.path.dirname(BASE_DIR)), 'front_end_pc/static')
