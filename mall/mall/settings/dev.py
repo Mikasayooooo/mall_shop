@@ -125,14 +125,22 @@ DATABASES = {
     #     'ENGINE': 'django.db.backends.sqlite3',
     #     'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     # }
-    'default': {
+    'default': {   # 主机:增删改
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'mall_shop',  # 数据库的名字
         'USER': 'mall_shop',  # 数据库用户名
-        'PASSWORD': 'mysql',
-        'HOST': '192.168.36.130',
+        'PASSWORD': 'mysql',  # 数据库密码
+        'HOST': '192.168.36.130',   # 数据库主机
         'PORT': 3306,  # 数据库端口
-    }
+    },
+    'slave': {  # 从机:查
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'mall_shop',  # 数据库的名字
+            'USER': 'root',  # 数据库用户名
+            'PASSWORD': 'mysql',  # 数据库密码
+            'HOST': '192.168.36.130',  # 数据库主机
+            'PORT': 3307,  # 数据库端口
+        },
 }
 
 # Password validation
@@ -411,3 +419,7 @@ HAYSTACK_CONNECTIONS = {
 
 # 当添加、修改、删除数据时，⾃动⽣成索引
 HAYSTACK_SIGNAL_PROCESSOR = 'haystack.signals.RealtimeSignalProcessor'
+
+
+# 配置读写分离
+DATABASE_ROUTERS = ['mall.utils.db_router.MasterSlaveDBRouter']
