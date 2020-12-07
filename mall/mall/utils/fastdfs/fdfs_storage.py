@@ -13,6 +13,9 @@ class FastDFSStorage(Storage):
         self.client_path = client_path or settings.FDFS_CLIENT_CONF
         self.base_url = base_url or settings.FDFS_BASE_URL
 
+        # self.client_path = client_path if client_path else settings.FDFS_CLIENT_CONF
+        # self.base_url = base_url if base_url else settings.FDFS_BASE_URL
+
         # 这样写太麻烦
         # if client_path:
         #     self.client_path = client_path

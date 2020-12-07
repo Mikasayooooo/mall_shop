@@ -71,6 +71,7 @@ INSTALLED_APPS = [
     'crispy_forms',
     'reversion',
     'haystack',  # 搜索模块
+    'captcha',  # 图片验证码
 
     'users.apps.UsersConfig',  # 用户模块
     'oauth.apps.OauthConfig',  # QQ模块
@@ -131,6 +132,7 @@ DATABASES = {
         'USER': 'mall_shop',  # 数据库用户名
         'PASSWORD': 'mysql',  # 数据库密码
         'HOST': '192.168.36.130',   # 数据库主机
+        # 'HOST': '127.0.0.1',   # 数据库主机
         'PORT': 3306,  # 数据库端口
     },
     'slave': {  # 从机:查
@@ -139,6 +141,7 @@ DATABASES = {
             'USER': 'root',  # 数据库用户名
             'PASSWORD': 'mysql',  # 数据库密码
             'HOST': '192.168.36.130',  # 数据库主机
+            # 'HOST': '127.0.0.1',  # 数据库主机
             'PORT': 3307,  # 数据库端口
         },
 }

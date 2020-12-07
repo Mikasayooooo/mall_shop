@@ -1,22 +1,26 @@
 from django.shortcuts import render
-
 from rest_framework.views import APIView
-
 import random
 from django_redis import get_redis_connection
 from mall.libs.yuntongxun.sms import CCP  # 在apps 设置 Sources Root , 就能有代码提示，且不报红
 from rest_framework.response import Response
 from rest_framework import status
+import logging
+from verifications.captcha.captcha import captcha
+from captcha.views import CaptchaStore,captcha_image
+import base64
+import json
+
 
 from . import constants
 from celery_tasks.sms.tasks import send_sms_code
 
-import logging
+
 
 logger = logging.getLogger('django')
 
 
-# Create your views here.
+
 
 class SMSCodeView(APIView):
     '''短信验证码'''
@@ -62,3 +66,28 @@ class SMSCodeView(APIView):
 
         # 8.响应
         return Response({'message': 'ok'})
+
+
+
+
+
+class ImageView(APIView):
+    '''生成图片验证码'''
+
+    def get(self,request):
+        hashkey = CaptchaStore.generate_key()
+
+        try:
+            # 获取id
+            id_ = CaptchaStore.objects.filter(hashkey=hashkey).first().id
+            image = captcha_image(request,hashkey)  # captcha_image内部是用get获取,需要加异常
+
+            # base64加密
+            image_base = base64.b64encode(image.content)
+            # json_data = json.dumps({"id":id_,"image_base64":image_base.decode('utf-8')})
+            json_data = {"id":id_,"image_base64":image_base.decode('utf-8')}
+        except:
+            json_data = None
+
+        return Response(json_data)
+
